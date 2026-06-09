@@ -33,7 +33,7 @@ jobs:
         run: npx turbo run build
 
       - name: Lint (placeholder)
-        run: echo 'lint: not configured yet'
+        run: "echo 'lint: not configured yet'"
 
       - name: Test (placeholder)
-        run: echo 'test: not configured yet'
+        run: "echo 'test: not configured yet'"
