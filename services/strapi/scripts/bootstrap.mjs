@@ -1,7 +1,7 @@
 const STRAPI_URL = process.env.STRAPI_URL || "http://localhost:1337";
 
-// Use a full-access API token (created manually or via admin API)
-const TOKEN = process.env.STRAPI_API_TOKEN || "2166df5b70fecbf7009821c713d345e25e31333934c7b418697065e67bcff7e6126eb8bb58bb5c1dea2ad995b88c47dec7d72c58406ce0154c53d9d348db7499a299ef0cf52ee11d801a09f3ab120e9e85c489d29db6a33213cdb6dabbb84eb8fa582737688c4da8c116c5bc77c30b5679053913d60ce6c2273f9af85d1ad983";
+// Use a full-access API token (create via: docker compose exec strapi npx strapi admin:api-token:create --name=FullAccess --permissions-all)
+const TOKEN = process.env.STRAPI_API_TOKEN;
 
 async function api(path, options = {}) {
   const url = `${STRAPI_URL}${path}`;

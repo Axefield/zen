@@ -1,4 +1,7 @@
+# Usage: STRAPI_ADMIN_JWT=<your_jwt> ./create-token.sh
+# Get JWT by logging in: curl -X POST http://localhost:1337/admin/login -d '{"email":"admin@truligon.io","password":"your_password"}'
+
 curl -s -X POST http://localhost:1337/admin/api-tokens \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxIiwic2Vzc2lvbklkIjoiNmYzODZlYjBhZGZkY2IyOTAxNzlkZmJjMzVlODQ3ZmEiLCJ0eXBlIjoiYWNjZXNzIiwiaWF0IjoxNzgxMDIzODk0LCJleHAiOjE3ODEwMjU2OTR9.GyHLPecib9umfHwK8FxljL9JoLollgk8j7jScW_CSt4" \
+  -H "Authorization: Bearer ${STRAPI_ADMIN_JWT:?Set STRAPI_ADMIN_JWT env var}" \
   -d '{"name":"Bootstrap Token","description":"Seed data token","type":"full-access"}'
