@@ -1,0 +1,210 @@
+---
+import DashboardLayout from "../layouts/DashboardLayout.astro"
+import Card from "@truligon/ui/Card"
+import Badge from "@truligon/ui/Badge"
+import Button from "@truligon/ui/Button"
+
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000"
+---
+
+<DashboardLayout title="Agents">
+  <div class="header">
+    <div>
+      <h1>AI Agents</h1>
+      <p class="subtitle">Manage and interact with AI agents powered by Ollama.</p>
+    </div>
+    <Button variant="primary">New Agent</Button>
+  </div>
+
+  <section class="chat-section">
+    <h2>Chat</h2>
+    <p class="text-muted">Send a message to the AI engine to test the connection.</p>
+    <form id="chat-form" class="chat-form">
+      <div class="input-row">
+        <input type="text" id="chat-input" placeholder="Ask something..." class="chat-input" />
+        <Button type="submit" variant="primary">Send</Button>
+      </div>
+    </form>
+    <div id="chat-output" class="chat-output"></div>
+  </section>
+
+  <section>
+    <h2>Available Agents</h2>
+    <div class="agent-grid">
+      <Card>
+        <h3>Research Agent</h3>
+        <Badge variant="default">research</Badge>
+        <p>Conduct research and gather information on topics.</p>
+      </Card>
+      <Card>
+        <h3>Content Agent</h3>
+        <Badge variant="default">content</Badge>
+        <p>Generate and optimize content.</p>
+      </Card>
+      <Card>
+        <h3>UX Agent</h3>
+        <Badge variant="default">ux</Badge>
+        <p>Analyze user experience patterns.</p>
+      </Card>
+    </div>
+  </section>
+</DashboardLayout>
+
+<script>
+  const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000"
+  const form = document.getElementById("chat-form")!
+  const input = document.getElementById("chat-input") as HTMLInputElement
+  const output = document.getElementById("chat-output")!
+
+  function getToken() {
+    const match = document.cookie.match(/(?:^|;\s*)zen_token=([^;]*)/)
+    return match ? decodeURIComponent(match[1]) : null
+  }
+
+  function appendMessage(role: string, content: string) {
+    const div = document.createElement("div")
+    div.className = `message message-${role}`
+    div.innerHTML = `<strong>${role === "user" ? "You" : "AI"}:</strong> ${content}`
+    output.appendChild(div)
+    output.scrollTop = output.scrollHeight
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault()
+    const text = input.value.trim()
+    if (!text) return
+
+    appendMessage("user", text)
+    input.value = ""
+
+    const token = getToken()
+    try {
+      const res = await fetch(`${API_URL}/api/ai/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ messages: [{ role: "user", content: text }] }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error((data as any).error ?? "Request failed")
+      }
+
+      const data = await res.json()
+      appendMessage("assistant", data.message.content)
+    } catch (err) {
+      appendMessage("assistant", `Error: ${(err as Error).message}`)
+    }
+  })
+</script>
+
+<style>
+  h1 {
+    font-size: var(--text-heading-1);
+    margin: 0;
+  }
+
+  h2 {
+    font-size: var(--text-heading-3);
+    margin: 0 0 var(--spacing-3);
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-8);
+  }
+
+  .subtitle {
+    color: var(--text-secondary);
+    margin: var(--spacing-1) 0 0;
+    font-size: var(--text-body);
+  }
+
+  .text-muted {
+    color: var(--text-muted);
+    font-size: var(--text-small);
+    margin: 0 0 var(--spacing-4);
+  }
+
+  .chat-section {
+    margin-bottom: var(--spacing-8);
+  }
+
+  .chat-form {
+    margin-bottom: var(--spacing-4);
+  }
+
+  .input-row {
+    display: flex;
+    gap: var(--spacing-2);
+  }
+
+  .chat-input {
+    flex: 1;
+    padding: var(--spacing-2) var(--spacing-3);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    font-size: var(--text-body);
+    font-family: inherit;
+    background: var(--bg-card);
+    color: var(--text-primary);
+  }
+
+  .chat-input:focus {
+    outline: none;
+    border-color: var(--color-primary-400);
+    box-shadow: 0 0 0 3px var(--color-primary-100);
+  }
+
+  .chat-output {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-4);
+    min-height: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: var(--bg-card);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+  }
+
+  .message {
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-md);
+    font-size: var(--text-small);
+    line-height: var(--line-height-relaxed);
+  }
+
+  .message-user {
+    background: var(--color-primary-100);
+    align-self: flex-end;
+  }
+
+  .message-assistant {
+    background: var(--bg-page);
+    align-self: flex-start;
+  }
+
+  .agent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-4);
+  }
+
+  .agent-grid h3 {
+    margin: 0 0 var(--spacing-2);
+    font-size: var(--text-body);
+  }
+
+  .agent-grid p {
+    margin: var(--spacing-2) 0 0;
+    font-size: var(--text-small);
+    color: var(--text-secondary);
+  }
+</style>

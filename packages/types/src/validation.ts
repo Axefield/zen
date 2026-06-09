@@ -567,3 +567,25 @@ export const FeatureFlagSchema = BaseEntitySchema.extend({
   variants: z.array(FlagVariantSchema),
   targetingRules: z.array(TargetingRuleSchema),
 })
+
+// ─── Auth Schemas ─────────────────────────────────────
+
+export const SystemRoleSchema = z.enum(["owner", "admin", "operator", "viewer"])
+
+export const UserSchema = BaseEntitySchema.extend({
+  email: z.string().email(),
+  name: z.string().min(1).max(200),
+  role: SystemRoleSchema,
+  isActive: z.boolean(),
+})
+
+export const LoginRequestSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8).max(128),
+})
+
+export const RegisterRequestSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8).max(128),
+  name: z.string().min(1).max(200),
+})

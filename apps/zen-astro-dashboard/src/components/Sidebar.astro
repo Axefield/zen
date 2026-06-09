@@ -3,9 +3,12 @@ const navigation = [
   { label: "Overview", href: "/", icon: "grid" },
   { label: "Analytics", href: "/analytics", icon: "chart" },
   { label: "Content", href: "/content", icon: "file" },
+  { label: "Agents", href: "/agents", icon: "bot" },
   { label: "Experiments", href: "/experiments", icon: "beaker" },
   { label: "Settings", href: "/settings", icon: "gear" },
 ]
+
+const user = Astro.locals.user
 ---
 
 <aside class="sidebar">
@@ -13,12 +16,31 @@ const navigation = [
   <nav aria-label="Dashboard navigation">
     {navigation.map((item) => (
       <a href={item.href} class={Astro.url.pathname === item.href ? "active" : ""}>
-        <span class="icon" aria-hidden="true">{item.icon === "grid" ? "▦" : item.icon === "chart" ? "📊" : item.icon === "file" ? "📄" : item.icon === "beaker" ? "🔬" : "⚙"}</span>
+        <span class="icon" aria-hidden="true">{item.icon === "grid" ? "▦" : item.icon === "chart" ? "📊" : item.icon === "file" ? "📄" : item.icon === "bot" ? "🤖" : item.icon === "beaker" ? "🔬" : "⚙"}</span>
         {item.label}
       </a>
     ))}
   </nav>
+  <div class="user-section">
+    {user && (
+      <>
+        <span class="user-name">{user.name}</span>
+        <span class="user-role">{user.role}</span>
+        <button class="logout-btn" data-logout>Sign Out</button>
+      </>
+    )}
+  </div>
 </aside>
+
+<script>
+  const logoutBtn = document.querySelector("[data-logout]")
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      document.cookie = "zen_token=; path=/; max-age=0; SameSite=Strict"
+      window.location.href = "/login"
+    })
+  }
+</script>
 
 <style>
   .sidebar {
@@ -42,6 +64,7 @@ const navigation = [
     display: flex;
     flex-direction: column;
     gap: var(--spacing-1);
+    flex: 1;
   }
 
   nav a {
@@ -72,5 +95,42 @@ const navigation = [
     font-size: 1.1rem;
     width: 20px;
     text-align: center;
+  }
+
+  .user-section {
+    border-top: 1px solid var(--color-primary-600);
+    padding-top: var(--spacing-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+  }
+
+  .user-name {
+    font-size: var(--text-small);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-inverse);
+  }
+
+  .user-role {
+    font-size: var(--text-caption);
+    color: var(--color-primary-300);
+    text-transform: capitalize;
+  }
+
+  .logout-btn {
+    background: none;
+    border: 1px solid var(--color-primary-500);
+    color: var(--color-primary-200);
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-md);
+    font-size: var(--text-caption);
+    cursor: pointer;
+    margin-top: var(--spacing-2);
+    transition: background var(--transition-fast);
+  }
+
+  .logout-btn:hover {
+    background: var(--color-primary-600);
+    color: var(--text-inverse);
   }
 </style>

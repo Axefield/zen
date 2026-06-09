@@ -1,0 +1,130 @@
+---
+import "@truligon/ui/tokens.css"
+import Input from "@truligon/ui/Input"
+import Button from "@truligon/ui/Button"
+
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000"
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login | Truligon's Zen</title>
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <main class="login-page">
+      <div class="login-card">
+        <h1>Truligon's Zen</h1>
+        <p class="subtitle">Sign in to your dashboard</p>
+
+        <form id="login-form">
+          <Input name="email" type="email" label="Email" placeholder="you@example.com" required />
+          <Input name="password" type="password" label="Password" placeholder="Enter your password" required />
+          <Button type="submit" variant="primary">Sign In</Button>
+        </form>
+
+        <p id="error-message" class="error hidden"></p>
+      </div>
+    </main>
+
+    <script>
+      const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000"
+      const form = document.getElementById("login-form")!
+      const errorEl = document.getElementById("error-message")!
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault()
+        errorEl.classList.add("hidden")
+
+        const formData = new FormData(form as HTMLFormElement)
+        const email = formData.get("email") as string
+        const password = formData.get("password") as string
+
+        try {
+          const res = await fetch(`${API_URL}/api/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          })
+
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}))
+            throw new Error((data as any).error ?? "Login failed")
+          }
+
+          const data = await res.json()
+          document.cookie = `zen_token=${encodeURIComponent(data.token)}; path=/; max-age=${60 * 60 * 24}; SameSite=Strict`
+          window.location.href = "/"
+        } catch (err) {
+          errorEl.textContent = (err as Error).message
+          errorEl.classList.remove("hidden")
+        }
+      })
+    </script>
+  </body>
+</html>
+
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-family-base);
+    background: var(--bg-page);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .login-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: var(--spacing-4);
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-8);
+  }
+
+  h1 {
+    font-size: var(--text-heading-2);
+    margin: 0 0 var(--spacing-1);
+    text-align: center;
+  }
+
+  .subtitle {
+    color: var(--text-secondary);
+    text-align: center;
+    margin: 0 0 var(--spacing-6);
+    font-size: var(--text-small);
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+
+  .error {
+    color: var(--color-error);
+    font-size: var(--text-small);
+    margin: var(--spacing-3) 0 0;
+    text-align: center;
+  }
+
+  .hidden {
+    display: none;
+  }
+</style>

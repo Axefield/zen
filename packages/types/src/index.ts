@@ -96,6 +96,16 @@ export type {
   AgentWorkflow,
 } from "./modules/ai.js"
 
+// Auth Module
+export type {
+  SystemRole,
+  User,
+  AuthSession,
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+} from "./modules/auth.js"
+
 // Experimentation Module
 export type {
   Hypothesis,
@@ -174,4 +184,8 @@ export {
   FlagVariantSchema,
   TargetingRuleSchema,
   FeatureFlagSchema,
+  SystemRoleSchema,
+  UserSchema,
+  LoginRequestSchema,
+  RegisterRequestSchema,
 } from "./validation.js"

@@ -1,5 +1,5 @@
-const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000"
-const STRAPI_URL = import.meta.env.PUBLIC_STRAPI_URL || "http://localhost:1337"
+const API_URL = import.meta.env.INTERNAL_API_URL || process.env.INTERNAL_API_URL || "http://ai-engine:4000"
+const STRAPI_URL = import.meta.env.PUBLIC_STRAPI_URL || "http://strapi:1337"
 
 export async function fetchHealth(): Promise<{ status: string; service: string; modules: string[] }> {
   const res = await fetch(`${API_URL}/health`)

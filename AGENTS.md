@@ -112,7 +112,7 @@ All 7 Docker services run. Module directories exist. `.gitignore`, `.env.example
 
 **Not done:** Meilisearch sync, webhooks to ai-engine, role-based access, review workflows.
 
-### Phase 3 — Frontend Foundation (80% Complete)
+### Phase 3 — Frontend Foundation (90% Complete)
 
 **zen-astro-web:**
 - ✅ Base layout (Header + Footer + SEO meta)
@@ -132,17 +132,19 @@ All 7 Docker services run. Module directories exist. `.gitignore`, `.env.example
 **zen-astro-dashboard:**
 - ✅ Dashboard layout (Sidebar + main content area)
 - ✅ Overview page (`/`) — feeds from ai-engine health + Strapi content counts
+- ✅ Login page (`/login`) — form-based auth, POSTs to ai-engine `/api/auth/login`
+- ✅ Auth middleware — protects all routes, redirects to login if unauthenticated
+- ✅ Agents page (`/agents`) — chat interface with Ollama via ai-engine
+- ✅ Sidebar — shows logged-in user name/role, logout button
 - ✅ Placeholder pages: analytics, content, experiments
 - ✅ API client library (`src/lib/api.ts`)
-- ❌ No authentication or login flow
 - ❌ No content CRUD views
-- ❌ Settings/Agents pages referenced but 404
 
 **packages/ui:**
 - ✅ Design tokens CSS (99 custom properties — colors, typography, spacing, radii, shadows)
-- ❌ No reusable component primitives (Button, Card, Input, etc.)
+- ✅ 5 reusable component primitives: Button, Card, Input, Badge, Select
 
-### Phase 4 — AI Engine — Search (Complete)
+### Phase 4 — AI Engine — Search + Auth + AI (Complete)
 
 **Done:**
 - ✅ Meilisearch integration via `services/ai-engine/src/search.ts`
@@ -152,6 +154,12 @@ All 7 Docker services run. Module directories exist. `.gitignore`, `.env.example
 - ✅ Search results page at `/search?q=<term>` in `zen-astro-web`
 - ✅ Search link in header navigation
 - ✅ 11 documents indexed (4 articles, 3 products, 2 courses, 2 events)
+- ✅ Auth endpoints: POST `/api/auth/login`, POST `/api/auth/register`, GET `/api/auth/me`
+- ✅ JWT-based authentication with bcrypt password hashing
+- ✅ In-memory user store with seeded default admin user
+- ✅ AI provider abstraction with Ollama provider
+- ✅ AI endpoints: POST `/api/ai/chat`, GET `/api/ai/models`
+- ✅ Provider interface supports future providers (OpenAI, Anthropic, etc.)
 
 ### Phase 5-8 — Not Started (Stubs Only)
 - Payments: pure type re-exports, no Stripe integration
@@ -331,6 +339,7 @@ docker compose logs --tail=50 <service_name>
 | `src/modules/design-system.ts` | Design system entities |
 | `src/modules/revenue.ts` | Revenue module entities |
 | `src/modules/ux.ts` | UX module entities |
+| `src/modules/auth.ts` | Auth module entities (User, LoginRequest, SystemRole) |
 
 ### apps/zen-astro-web
 
@@ -355,7 +364,11 @@ docker compose logs --tail=50 <service_name>
 | `src/layouts/DashboardLayout.astro` | Dashboard layout (sidebar + main) |
 | `src/components/Sidebar.astro` | Dashboard sidebar navigation |
 | `src/lib/api.ts` | ai-engine + Strapi data fetching |
+| `src/lib/auth.ts` | Client-side auth helpers (login, token, user fetch) |
+| `src/middleware.ts` | Auth + security headers middleware |
 | `src/pages/index.astro` | Overview with health + content counts |
+| `src/pages/login.astro` | Login form page |
+| `src/pages/agents.astro` | Agent chat interface with Ollama |
 | `src/pages/analytics.astro` | Placeholder |
 | `src/pages/content.astro` | Placeholder |
 | `src/pages/experiments.astro` | Placeholder |
