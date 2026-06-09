@@ -1,4 +1,4 @@
-# Truligon Business Operating System — Agent Guide
+# Truligon's Zen — Agent Guide
 
 ## Overview
 

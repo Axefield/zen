@@ -1,6 +1,6 @@
-# Truligon Business Operating System
+# Truligon's Zen
 
-A modular, type-safe Business Operating System built around **Astro**, **Strapi**, **TypeScript**, **PostgreSQL**, **Redis**, **Meilisearch**, and **AI services**.
+A modular, type-safe Business Operating System built around **Astro**, **Strapi**, **TypeScript**, **PostgreSQL**, **Redis**, **Meilisearch**, and **AI services**. Truligon's Zen is designed to power any digital product (SaaS, e-commerce, publishing, education, trading, fundraising) from a shared, reusable core where domains are configurations, not separate products.
 
 Designed to power SaaS products, AI products, trading platforms, e-commerce, content publishing, fundraising campaigns, community systems, educational products, and game studio operations — all from a shared, reusable core.
 

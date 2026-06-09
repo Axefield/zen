@@ -21,9 +21,9 @@ module.exports = {
         { name: "Business", slug: "business", description: "Business articles", publishedAt: new Date() },
       ],
       articles: [
-        { title: "Welcome to Truligon", slug: "welcome-to-truligon", excerpt: "An introduction to the Truligon platform", body: "# Welcome\n\nTruligon is a modular Business Operating System...", publishedAt: new Date() },
+        { title: "Welcome to Truligon's Zen", slug: "welcome-to-truligons-zen", excerpt: "An introduction to the Truligon's Zen platform", body: "# Welcome\n\nTruligon's Zen is a modular Business Operating System...", publishedAt: new Date() },
         { title: "Getting Started with Design Tokens", slug: "getting-started-with-design-tokens", excerpt: "How we use design tokens for consistent UI", body: "# Design Tokens\n\nDesign tokens are the foundation...", publishedAt: new Date() },
-        { title: "Building a Modular Business OS", slug: "building-modular-business-os", excerpt: "Architecture decisions behind Truligon", body: "# Modular Architecture\n\nA domain-agnostic approach...", publishedAt: new Date() },
+        { title: "Building a Modular Business OS", slug: "building-modular-business-os", excerpt: "Architecture decisions behind Truligon's Zen", body: "# Modular Architecture\n\nA domain-agnostic approach...", publishedAt: new Date() },
       ],
     };
 

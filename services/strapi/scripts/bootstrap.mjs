@@ -38,10 +38,10 @@ async function main() {
   // 4. Create seed articles
   const articles = [
     {
-      title: "Welcome to Truligon",
-      slug: "welcome-to-truligon",
-      excerpt: "An introduction to the Truligon platform",
-      body: "# Welcome\n\nTruligon is a modular Business Operating System...",
+      title: "Welcome to Truligon's Zen",
+      slug: "welcome-to-truligons-zen",
+      excerpt: "An introduction to the Truligon's Zen platform",
+      body: "# Welcome\n\nTruligon's Zen is a modular Business Operating System...",
     },
     {
       title: "Getting Started with Design Tokens",
@@ -52,7 +52,7 @@ async function main() {
     {
       title: "Building a Modular Business OS",
       slug: "building-modular-business-os",
-      excerpt: "Architecture decisions behind Truligon",
+      excerpt: "Architecture decisions behind Truligon's Zen",
       body: "# Modular Architecture\n\nA domain-agnostic approach...",
     },
   ];
