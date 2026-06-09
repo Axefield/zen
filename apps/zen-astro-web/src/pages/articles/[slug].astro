@@ -1,8 +1,17 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro"
-import { fetchCollection } from "../../lib/strapi"
+import { fetchCollection, strapiImage } from "../../lib/strapi"
 
 const { slug } = Astro.params
+
+interface StrapiSeo {
+  id: number
+  title: string
+  description: string
+  ogImage?: { url: string; alternativeText?: string }
+  canonicalUrl?: string
+  noindex?: boolean
+}
 
 interface StrapiArticle {
   id: number
@@ -10,21 +19,37 @@ interface StrapiArticle {
   slug: string
   excerpt: string
   body: string
+  featuredImage?: { url: string; alternativeText?: string; formats?: Record<string, { url: string }> }
+  seo?: StrapiSeo
   publishedAt: string
 }
 
 let article: StrapiArticle | null = null
 try {
-  const articles = await fetchCollection<StrapiArticle>("articles", { "filters[slug][$eq]": slug })
+  const articles = await fetchCollection<StrapiArticle>("articles", {
+    "filters[slug][$eq]": slug,
+    "populate[featuredImage]": "true",
+    "populate[seo][populate][ogImage]": "true"
+  })
   article = articles.length > 0 ? articles[0] : null
 } catch {}
 
 if (!article) {
   return Astro.redirect("/articles", 307)
 }
+
+const seo = article.seo
+const ogImage = seo?.ogImage ? strapiImage(seo.ogImage.url) : article.featuredImage ? strapiImage(article.featuredImage.url) : undefined
+const featuredImageUrl = article.featuredImage ? strapiImage(article.featuredImage.url) : undefined
 ---
 
-<BaseLayout title={article.title} description={article.excerpt}>
+<BaseLayout
+  title={seo?.title ?? article.title}
+  description={seo?.description ?? article.excerpt}
+  ogImage={ogImage}
+  canonicalUrl={seo?.canonicalUrl}
+  noindex={seo?.noindex}
+>
   <article class="article">
     <header>
       <p class="breadcrumb"><a href="/articles">Articles</a> /</p>
@@ -35,6 +60,9 @@ if (!article) {
         })}
       </time>
     </header>
+    {featuredImageUrl && (
+      <img src={featuredImageUrl} alt={article.featuredImage?.alternativeText ?? article.title} class="featured-image" />
+    )}
     <div class="body">
       {article.body}
     </div>
@@ -49,7 +77,7 @@ if (!article) {
   }
 
   header {
-    margin-bottom: var(--spacing-8);
+    margin-bottom: var(--spacing-6);
   }
 
   .breadcrumb {
@@ -70,6 +98,15 @@ if (!article) {
   time {
     color: var(--text-muted);
     font-size: var(--text-small);
+  }
+
+  .featured-image {
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-8);
+    object-fit: cover;
+    max-height: 400px;
   }
 
   .body {

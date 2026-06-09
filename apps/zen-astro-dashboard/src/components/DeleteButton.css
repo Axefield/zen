@@ -1,0 +1,38 @@
+.btn-delete {
+  background: none;
+  border: none;
+  color: var(--color-error);
+  font-size: var(--text-small);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+}
+
+.btn-delete:hover {
+  text-decoration: underline;
+}
+
+.delete-confirm {
+  display: inline-flex;
+  gap: var(--spacing-1);
+}
+
+.btn-yes {
+  background: var(--color-error);
+  color: var(--text-inverse);
+  border: none;
+  padding: 2px var(--spacing-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-caption);
+  cursor: pointer;
+}
+
+.btn-no {
+  background: var(--color-neutral-100);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+  padding: 2px var(--spacing-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-caption);
+  cursor: pointer;
+}

@@ -1,0 +1,163 @@
+---
+import CallToAction from "./CallToAction.astro"
+
+export interface PricingTierProps {
+  id?: number
+  name: string
+  description?: string
+  price: number
+  interval?: "monthly" | "yearly" | "one-time"
+  features?: string[]
+  highlighted?: boolean
+  cta?: {
+    buttonText: string
+    buttonUrl: string
+    variant: "primary" | "secondary" | "outline" | "ghost"
+    headline?: string
+    body?: string
+  }
+}
+
+export interface Props {
+  headline?: string
+  tiers: PricingTierProps[]
+  class?: string
+}
+
+const { headline, tiers, class: className = "" } = Astro.props
+---
+
+<section class={`pricing-table ${className}`}>
+  {headline && <h2 class="pricing-headline">{headline}</h2>}
+  <div class="pricing-tiers">
+    {tiers.map((tier) => (
+      <article class={`tier ${tier.highlighted ? "tier-highlighted" : ""}`}>
+        <header class="tier-header">
+          <h3 class="tier-name">{tier.name}</h3>
+          {tier.description && <p class="tier-desc">{tier.description}</p>}
+        </header>
+        <div class="tier-price">
+          <span class="price-amount">${tier.price}</span>
+          {tier.interval && tier.interval !== "one-time" && (
+            <span class="price-interval">/{tier.interval}</span>
+          )}
+        </div>
+        {tier.features && tier.features.length > 0 && (
+          <ul class="tier-features">
+            {tier.features.map((f) => (
+              <li>{f}</li>
+            ))}
+          </ul>
+        )}
+        {tier.cta && (
+          <div class="tier-cta">
+            <CallToAction {...tier.cta} />
+          </div>
+        )}
+      </article>
+    ))}
+  </div>
+</section>
+
+<style>
+  .pricing-table {
+    padding: var(--spacing-12) var(--spacing-6);
+  }
+
+  .pricing-headline {
+    text-align: center;
+    font-size: var(--text-heading-2);
+    font-weight: var(--font-weight-bold);
+    margin: 0 0 var(--spacing-8);
+  }
+
+  .pricing-tiers {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-6);
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+  }
+
+  .tier {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-8);
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow var(--transition-fast);
+  }
+
+  .tier-highlighted {
+    border-color: var(--color-primary-500);
+    box-shadow: var(--shadow-md);
+    position: relative;
+  }
+
+  .tier-highlighted::before {
+    content: "Popular";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--color-primary-500);
+    color: var(--text-inverse);
+    font-size: var(--text-caption);
+    font-weight: var(--font-weight-semibold);
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-full);
+  }
+
+  .tier-header {
+    margin-bottom: var(--spacing-6);
+  }
+
+  .tier-name {
+    font-size: var(--text-heading-3);
+    font-weight: var(--font-weight-semibold);
+    margin: 0 0 var(--spacing-2);
+  }
+
+  .tier-desc {
+    color: var(--text-secondary);
+    font-size: var(--text-small);
+    margin: 0;
+  }
+
+  .tier-price {
+    margin-bottom: var(--spacing-6);
+    font-size: var(--text-heading-1);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .price-interval {
+    font-size: var(--text-body);
+    font-weight: var(--font-weight-normal);
+    color: var(--text-secondary);
+  }
+
+  .tier-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 var(--spacing-6);
+    flex: 1;
+  }
+
+  .tier-features li {
+    padding: var(--spacing-2) 0;
+    border-bottom: 1px solid var(--border-light);
+    font-size: var(--text-small);
+    color: var(--text-primary);
+  }
+
+  .tier-features li::before {
+    content: "✓";
+    color: var(--color-success);
+    margin-right: var(--spacing-2);
+  }
+
+  .tier-cta {
+    margin-top: auto;
+  }
+</style>

@@ -112,7 +112,7 @@ All 7 Docker services run. Module directories exist. `.gitignore`, `.env.example
 
 **Not done:** Meilisearch sync, webhooks to ai-engine, role-based access, review workflows.
 
-### Phase 3 — Frontend Foundation (90% Complete)
+### Phase 3 — Frontend Foundation (95% Complete)
 
 **zen-astro-web:**
 - ✅ Base layout (Header + Footer + SEO meta)
@@ -125,8 +125,10 @@ All 7 Docker services run. Module directories exist. `.gitignore`, `.env.example
 - ✅ Course detail (`/courses/[slug]`) — title, price, modules/lessons, rich description
 - ✅ Events listing (`/events`) — card grid with title + date + location badge
 - ✅ Event detail (`/events/[slug]`) — date, location, capacity, ticket tiers, rich description
-- ✅ Dynamic page (`/[slug]`) — fetches public pages by slug (redirects to `/` if not found)
-- ✅ Strapi data fetching library (`src/lib/strapi.ts`)
+- ✅ Dynamic page (`/[slug]`) — renders Strapi dynamic zones via DynamicZone renderer. Populates all 6 shared component types with deep nested population.
+- ✅ Search results page (`/search`) — grouped results from Meilisearch via ai-engine
+- ✅ Search link in header navigation
+- ✅ Strapi data fetching library (`src/lib/strapi.ts`) — `fetchCollection`, `fetchSingle`, `strapiImage`
 - ❌ No client-side interactivity (Islands)
 
 **zen-astro-dashboard:**
@@ -135,14 +137,22 @@ All 7 Docker services run. Module directories exist. `.gitignore`, `.env.example
 - ✅ Login page (`/login`) — form-based auth, POSTs to ai-engine `/api/auth/login`
 - ✅ Auth middleware — protects all routes, redirects to login if unauthenticated
 - ✅ Agents page (`/agents`) — chat interface with Ollama via ai-engine
-- ✅ Sidebar — shows logged-in user name/role, logout button
-- ✅ Placeholder pages: analytics, content, experiments
-- ✅ API client library (`src/lib/api.ts`)
-- ❌ No content CRUD views
+- ✅ Sidebar — shows logged-in user name/role, logout button. Content section highlights on all `/content/*` sub-pages.
+- ✅ Content hub page (`/content`) — card grid nav to each content type with item counts
+- ✅ Content list views — Pages (`/content/pages`), Articles (`/content/articles`), Products (`/content/products`), Courses (`/content/courses`), Events (`/content/events`) — table-based views with sorting, badges, metadata
+- ✅ API client library (`src/lib/api.ts`) — `fetchStrapiCollection<T>` for generic Strapi data fetching
 
 **packages/ui:**
 - ✅ Design tokens CSS (99 custom properties — colors, typography, spacing, radii, shadows)
-- ✅ 5 reusable component primitives: Button, Card, Input, Badge, Select
+- ✅ 12 reusable components: Button, Card, Input, Badge, Select, Heading, Text, Prose, Container, Grid, Stack
+- ✅ Heading — level (1-4), size (display/h1-h4), weight
+- ✅ Text — size (body/small/caption), color (primary/secondary/muted/inverse)
+- ✅ Prose — rich text rendering with `set:html`, heading/blockquote/code/pre/list styles
+- ✅ Container — size (sm/md/lg/full), padding
+- ✅ Grid — cols (1-4/auto), gap
+- ✅ Stack — direction (vertical/horizontal), gap, alignment
+- ✅ 6 Strapi dynamic zone components: Hero, RichTextBlock, CallToAction, MediaGallery, PricingTable, TestimonialCard
+- ✅ DynamicZone renderer — maps `__component` to Astro components, resolves media URLs via `resolveMediaUrl` callback
 
 ### Phase 4 — AI Engine — Search + Auth + AI (Complete)
 
@@ -354,6 +364,8 @@ docker compose logs --tail=50 <service_name>
 | `src/pages/index.astro` | Homepage with latest articles |
 | `src/pages/articles/index.astro` | Articles listing |
 | `src/pages/articles/[slug].astro` | Article detail (SSR, slug filter) |
+| `src/pages/search.astro` | Search results page from Meilisearch |
+| `src/pages/[slug].astro` | Dynamic page with DynamicZone renderer (Hero, CTA, Pricing, etc.) |
 
 ### apps/zen-astro-dashboard
 
@@ -370,8 +382,39 @@ docker compose logs --tail=50 <service_name>
 | `src/pages/login.astro` | Login form page |
 | `src/pages/agents.astro` | Agent chat interface with Ollama |
 | `src/pages/analytics.astro` | Placeholder |
-| `src/pages/content.astro` | Placeholder |
+| `src/pages/content.astro` | Content hub with card grid to each content type |
+| `src/pages/content/pages.astro` | Pages list table with visibility/status badges |
+| `src/pages/content/articles.astro` | Articles list table with excerpt and date |
+| `src/pages/content/products.astro` | Products list table with name and price |
+| `src/pages/content/courses.astro` | Courses list table with title and price |
+| `src/pages/content/events.astro` | Events list table with date, location, capacity |
 | `src/pages/experiments.astro` | Placeholder |
+
+### packages/ui
+
+| File | Purpose |
+|------|---------|
+| `src/tokens.css` | Design tokens (99 CSS custom properties) |
+| `src/index.ts` | Package entry — type re-exports |
+| `src/components/Button.astro` | Button (primary/secondary/ghost/danger, sm/md/lg) |
+| `src/components/Card.astro` | Card (default/elevated/bordered, padding) |
+| `src/components/Input.astro` | Input (text/email/password/etc., with label) |
+| `src/components/Badge.astro` | Badge (default/success/warning/error/info) |
+| `src/components/Select.astro` | Select dropdown |
+| `src/components/Heading.astro` | Heading (level 1-4, size display/h1-h4, weight) |
+| `src/components/Text.astro` | Text (body/small/caption, colors, weight) |
+| `src/components/Prose.astro` | Rich text renderer with `set:html` support |
+| `src/components/Container.astro` | Layout container (sm/md/lg/full, padding) |
+| `src/components/Grid.astro` | Responsive grid (cols 1-4/auto, gap) |
+| `src/components/Stack.astro` | Flex stack (vertical/horizontal, gap, align) |
+| `src/components/dynamic-zone/DynamicZone.astro` | Dynamic zone renderer — maps `__component` to Astro components |
+| `src/components/dynamic-zone/Hero.astro` | Hero block (headline, subheadline, background, CTA) |
+| `src/components/dynamic-zone/RichTextBlock.astro` | Rich text + media block |
+| `src/components/dynamic-zone/CallToAction.astro` | CTA block (headline, body, button, variant) |
+| `src/components/dynamic-zone/MediaGallery.astro` | Media gallery (grid/carousel/masonry/single) |
+| `src/components/dynamic-zone/PricingTable.astro` | Pricing table (tiers, features, intervals, CTAs) |
+| `src/components/dynamic-zone/TestimonialCard.astro` | Testimonial (quote, author, role, avatar) |
+| `src/components/dynamic-zone/types.ts` | Shared dynamic zone types |
 
 ### services/strapi
 

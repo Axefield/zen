@@ -1,0 +1,42 @@
+---
+export interface Props {
+  level?: 1 | 2 | 3 | 4
+  size?: "display" | "h1" | "h2" | "h3" | "h4"
+  weight?: "normal" | "medium" | "semibold" | "bold"
+  class?: string
+}
+
+const { level = 1, size, weight = "bold", class: className = "" } = Astro.props
+const Tag = `h${level}` as keyof JSX.IntrinsicElements
+const sizeClass = size ? `heading-${size}` : `heading-h${level}`
+---
+
+<Tag class={`heading ${sizeClass} weight-${weight} ${className}`}>
+  <slot />
+</Tag>
+
+<style>
+  .heading {
+    letter-spacing: -0.02em;
+    line-height: var(--line-height-tight);
+    margin: 0;
+  }
+
+  .heading-display {
+    font-size: var(--text-display);
+  }
+
+  .heading-h1, .heading-h2\:not(.heading-h1):not(.heading-h2) {
+    font-size: var(--text-heading-1);
+  }
+
+  .heading-h1 { font-size: var(--text-heading-1); }
+  .heading-h2 { font-size: var(--text-heading-2); }
+  .heading-h3 { font-size: var(--text-heading-3); }
+  .heading-h4 { font-size: var(--text-body); }
+
+  .weight-normal { font-weight: var(--font-weight-normal); }
+  .weight-medium { font-weight: var(--font-weight-medium); }
+  .weight-semibold { font-weight: var(--font-weight-semibold); }
+  .weight-bold { font-weight: var(--font-weight-bold); }
+</style>

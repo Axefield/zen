@@ -1,0 +1,32 @@
+---
+export interface Props {
+  size?: "body" | "small" | "caption"
+  color?: "primary" | "secondary" | "muted" | "inverse"
+  weight?: "normal" | "medium" | "semibold"
+  as?: "p" | "span" | "div"
+  class?: string
+}
+
+const { size = "body", color = "primary", weight = "normal", as: Tag = "p", class: className = "" } = Astro.props
+---
+
+<Tag class={`text text-${size} color-${color} weight-${weight} ${className}`}>
+  <slot />
+</Tag>
+
+<style>
+  .text { margin: 0; }
+
+  .text-body { font-size: var(--text-body); }
+  .text-small { font-size: var(--text-small); }
+  .text-caption { font-size: var(--text-caption); }
+
+  .color-primary { color: var(--text-primary); }
+  .color-secondary { color: var(--text-secondary); }
+  .color-muted { color: var(--text-muted); }
+  .color-inverse { color: var(--text-inverse); }
+
+  .weight-normal { font-weight: var(--font-weight-normal); }
+  .weight-medium { font-weight: var(--font-weight-medium); }
+  .weight-semibold { font-weight: var(--font-weight-semibold); }
+</style>

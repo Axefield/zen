@@ -72,7 +72,7 @@ export async function handleMe(req: IncomingMessage, res: ServerResponse): Promi
   json(res, 200, { user: sanitizeUser(user) })
 }
 
-function readJson(req: IncomingMessage): Promise<unknown> {
+export function readJson(req: IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = []
     req.on("data", (chunk: Buffer) => chunks.push(chunk))

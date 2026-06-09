@@ -1,14 +1,29 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro"
-import { fetchCollection } from "../lib/strapi"
+import { fetchCollection, strapiImage } from "../lib/strapi"
+import DynamicZone from "@truligon/ui/dynamic-zone/DynamicZone"
+import type { DynamicBlock } from "@truligon/ui/dynamic-zone/types"
+import Container from "@truligon/ui/Container"
+import Heading from "@truligon/ui/Heading"
 
 const { slug } = Astro.params
+
+interface StrapiSeo {
+  id: number
+  title: string
+  description: string
+  ogImage?: { url: string; alternativeText?: string }
+  canonicalUrl?: string
+  noindex?: boolean
+}
 
 interface StrapiPage {
   id: number
   title: string
   slug: string
-  content?: unknown[]
+  content: DynamicBlock[]
+  visibility: "public" | "private" | "unlisted"
+  seo?: StrapiSeo
   createdAt: string
   publishedAt: string
 }
@@ -17,7 +32,13 @@ let page: StrapiPage | null = null
 try {
   const pages = await fetchCollection<StrapiPage>("pages", {
     "filters[slug][$eq]": slug,
-    "filters[visibility][$eq]": "public"
+    "filters[visibility][$eq]": "public",
+    "populate[content][on][shared.hero][populate]": "primaryCta,backgroundMedia",
+    "populate[content][on][shared.rich-text-block][populate]": "media",
+    "populate[content][on][shared.media-gallery][populate]": "media",
+    "populate[content][on][shared.pricing-table][populate][tiers][populate]": "cta",
+    "populate[content][on][shared.testimonial-card][populate]": "avatar",
+    "populate[seo][populate][ogImage]": "true"
   })
   page = pages.length > 0 ? pages[0] : null
 } catch {}
@@ -25,23 +46,25 @@ try {
 if (!page) {
   return Astro.redirect("/", 307)
 }
+
+const seo = page.seo
+const ogImage = seo?.ogImage ? strapiImage(seo.ogImage.url) : undefined
 ---
 
-<BaseLayout title={page.title}>
-  <article class="page">
-    <h1>{page.title}</h1>
+<BaseLayout
+  title={seo?.title ?? page.title}
+  description={seo?.description}
+  ogImage={ogImage}
+  canonicalUrl={seo?.canonicalUrl}
+  noindex={seo?.noindex}
+>
+  <article>
+    {page.content && page.content.length > 0 ? (
+      <DynamicZone blocks={page.content} resolveMediaUrl={strapiImage} />
+    ) : (
+      <Container size="sm" padding="lg">
+        <Heading level={1}>{page.title}</Heading>
+      </Container>
+    )}
   </article>
 </BaseLayout>
-
-<style>
-  .page {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: var(--spacing-12) var(--spacing-6);
-  }
-
-  h1 {
-    font-size: var(--text-heading-1);
-    margin: 0;
-  }
-</style>

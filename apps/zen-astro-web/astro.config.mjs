@@ -1,5 +1,6 @@
 import { defineConfig } from "astro/config"
 import partytown from "@astrojs/partytown"
+import preact from "@astrojs/preact"
 
 export default defineConfig({
   output: "server",
@@ -9,6 +10,7 @@ export default defineConfig({
   },
   trailingSlash: "never",
   integrations: [
+    preact(),
     partytown({
       config: {
         forward: ["dataLayer.push"],

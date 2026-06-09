@@ -1,0 +1,49 @@
+---
+import Button from "../Button.astro"
+
+export interface Props {
+  headline?: string
+  body?: string
+  buttonText: string
+  buttonUrl: string
+  variant?: "primary" | "secondary" | "outline" | "ghost"
+  class?: string
+}
+
+const { headline, body, buttonText, buttonUrl, variant = "primary", class: className = "" } = Astro.props
+---
+
+<section class={`cta-block cta-${variant} ${className}`}>
+  {headline && <h2 class="cta-headline">{headline}</h2>}
+  {body && <p class="cta-body">{body}</p>}
+  <Button href={buttonUrl} variant={variant === "outline" ? "secondary" : variant === "ghost" ? "ghost" : variant}>
+    {buttonText}
+  </Button>
+</section>
+
+<style>
+  .cta-block {
+    text-align: center;
+    padding: var(--spacing-12) var(--spacing-6);
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .cta-primary, .cta-secondary {
+    background: var(--color-primary-50);
+    border-radius: var(--radius-xl);
+  }
+
+  .cta-headline {
+    font-size: var(--text-heading-2);
+    font-weight: var(--font-weight-bold);
+    margin: 0 0 var(--spacing-3);
+  }
+
+  .cta-body {
+    color: var(--text-secondary);
+    margin: 0 0 var(--spacing-6);
+    font-size: var(--text-body);
+    line-height: var(--line-height-normal);
+  }
+</style>

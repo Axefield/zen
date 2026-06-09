@@ -1,8 +1,33 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro"
-import { fetchCollection } from "../../lib/strapi"
+import { fetchCollection, strapiImage } from "../../lib/strapi"
 
 const { slug } = Astro.params
+
+interface StrapiVariant {
+  id: number
+  name: string
+  sku?: string
+  price?: number
+  inventory?: number
+  attributes?: Record<string, string>
+}
+
+interface StrapiMedia {
+  id: number
+  url: string
+  alternativeText?: string
+  formats?: Record<string, { url: string }>
+}
+
+interface StrapiSeo {
+  id: number
+  title: string
+  description: string
+  ogImage?: { url: string; alternativeText?: string }
+  canonicalUrl?: string
+  noindex?: boolean
+}
 
 interface StrapiProduct {
   id: number
@@ -12,22 +37,39 @@ interface StrapiProduct {
   price: number
   compareAtPrice?: number
   currency: string
+  variants?: StrapiVariant[]
+  media?: StrapiMedia[]
+  seo?: StrapiSeo
   createdAt: string
   publishedAt: string
 }
 
 let product: StrapiProduct | null = null
 try {
-  const products = await fetchCollection<StrapiProduct>("products", { "filters[slug][$eq]": slug })
+  const products = await fetchCollection<StrapiProduct>("products", {
+    "filters[slug][$eq]": slug,
+    "populate[variants]": "true",
+    "populate[media]": "true",
+    "populate[seo][populate][ogImage]": "true"
+  })
   product = products.length > 0 ? products[0] : null
 } catch {}
 
 if (!product) {
   return Astro.redirect("/products", 307)
 }
+
+const seo = product.seo
+const ogImage = seo?.ogImage ? strapiImage(seo.ogImage.url) : product.media?.[0] ? strapiImage(product.media[0].url) : undefined
 ---
 
-<BaseLayout title={product.name} description={product.description}>
+<BaseLayout
+  title={seo?.title ?? product.name}
+  description={seo?.description ?? product.description}
+  ogImage={ogImage}
+  canonicalUrl={seo?.canonicalUrl}
+  noindex={seo?.noindex}
+>
   <article class="product">
     <header>
       <p class="breadcrumb"><a href="/products">Products</a> /</p>
@@ -41,9 +83,46 @@ if (!product) {
         )}
       </p>
     </header>
+
+    {product.media && product.media.length > 0 && (
+      <div class="gallery">
+        {product.media.map((m) => (
+          <img src={strapiImage(m.url)} alt={m.alternativeText ?? product.name} loading="lazy" />
+        ))}
+      </div>
+    )}
+
     <div class="body">
       {product.description}
     </div>
+
+    {product.variants && product.variants.length > 0 && (
+      <section class="variants">
+        <h2>Variants</h2>
+        <div class="variant-list">
+          {product.variants.map((v) => (
+            <div class="variant">
+              <div class="variant-info">
+                <strong>{v.name}</strong>
+                {v.sku && <span class="sku">SKU: {v.sku}</span>}
+              </div>
+              <div class="variant-meta">
+                {v.price != null && (
+                  <span class="variant-price">
+                    {new Intl.NumberFormat("en-US", { style: "currency", currency: product.currency }).format(v.price)}
+                  </span>
+                )}
+                {v.inventory != null && (
+                  <span class="variant-stock" data-instock={v.inventory > 0}>
+                    {v.inventory > 0 ? `${v.inventory} in stock` : "Out of stock"}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
   </article>
 </BaseLayout>
 
@@ -88,6 +167,20 @@ if (!product) {
     text-decoration: line-through;
   }
 
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--spacing-3);
+    margin-bottom: var(--spacing-8);
+  }
+
+  .gallery img {
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+  }
+
   .body {
     font-size: var(--text-body);
     line-height: var(--line-height-relaxed);
@@ -100,11 +193,74 @@ if (!product) {
 
   .body :global(h2) {
     margin: var(--spacing-8) 0 var(--spacing-3);
-    font-size: var(--text-heading-2);
   }
 
-  .body :global(h3) {
-    margin: var(--spacing-6) 0 var(--spacing-2);
-    font-size: var(--text-heading-3);
+  .variants {
+    margin-top: var(--spacing-10);
+    border-top: 1px solid var(--border-light);
+    padding-top: var(--spacing-8);
+  }
+
+  .variants h2 {
+    font-size: var(--text-heading-2);
+    margin: 0 0 var(--spacing-6);
+  }
+
+  .variant-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+
+  .variant {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-3) var(--spacing-4);
+  }
+
+  .variant-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+  }
+
+  .variant-info strong {
+    font-size: var(--text-small);
+  }
+
+  .sku {
+    font-size: var(--text-caption);
+    color: var(--text-muted);
+    font-family: var(--font-family-mono);
+  }
+
+  .variant-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+  }
+
+  .variant-price {
+    font-size: var(--text-body);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .variant-stock {
+    font-size: var(--text-caption);
+    padding: 2px var(--spacing-2);
+    border-radius: var(--radius-sm);
+  }
+
+  .variant-stock[data-instock="true"] {
+    background: #ecfdf5;
+    color: var(--color-success);
+  }
+
+  .variant-stock[data-instock="false"] {
+    background: #fef2f2;
+    color: var(--color-error);
   }
 </style>

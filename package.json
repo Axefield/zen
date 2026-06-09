@@ -17,6 +17,8 @@
     "build": "turbo run build"
   },
   "devDependencies": {
+    "@astrojs/preact": "^5.1.5",
+    "preact": "^10.29.2",
     "turbo": "^2.5.0"
   },
   "overrides": {

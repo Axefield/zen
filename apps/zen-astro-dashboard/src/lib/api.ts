@@ -18,6 +18,32 @@ export async function fetchStrapiCount(endpoint: string): Promise<number> {
   }
 }
 
+export async function fetchStrapiCollection<T>(endpoint: string, params?: Record<string, string>): Promise<T[]> {
+  try {
+    const url = new URL(`/api/${endpoint}`, STRAPI_URL)
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value))
+    }
+    const res = await fetch(url.toString())
+    if (!res.ok) return []
+    const json = await res.json()
+    return json.data ?? []
+  } catch {
+    return []
+  }
+}
+
+export async function fetchStrapiSingle<T>(endpoint: string, id: number): Promise<T | null> {
+  try {
+    const res = await fetch(`${STRAPI_URL}/api/${endpoint}/${id}`)
+    if (!res.ok) return null
+    const json = await res.json()
+    return json.data ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function fetchDashboardMetrics() {
   const [health, pages, articles, products, courses, events] = await Promise.all([
     fetchHealth().catch(() => null),
@@ -33,5 +59,60 @@ export async function fetchDashboardMetrics() {
     apiModules: health?.modules ?? [],
     totalContent: pages + articles + products + courses + events,
     contentBreakdown: { pages, articles, products, courses, events },
+  }
+}
+
+function authHeaders(token: string): Record<string, string> {
+  return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+}
+
+export async function createContent(collection: string, data: Record<string, unknown>, token: string): Promise<{ ok: boolean; error?: string; id?: number }> {
+  try {
+    const res = await fetch(`${API_URL}/api/content/${collection}`, {
+      method: "POST",
+      headers: authHeaders(token),
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      return { ok: false, error: (body as { error?: string }).error ?? `HTTP ${res.status}` }
+    }
+    const body = await res.json() as { data?: { id: number } }
+    return { ok: true, id: body.data?.id }
+  } catch (err) {
+    return { ok: false, error: (err as Error).message }
+  }
+}
+
+export async function updateContent(collection: string, id: number, data: Record<string, unknown>, token: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${API_URL}/api/content/${collection}/${id}`, {
+      method: "PUT",
+      headers: authHeaders(token),
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      return { ok: false, error: (body as { error?: string }).error ?? `HTTP ${res.status}` }
+    }
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: (err as Error).message }
+  }
+}
+
+export async function deleteContent(collection: string, id: number, token: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${API_URL}/api/content/${collection}/${id}`, {
+      method: "DELETE",
+      headers: authHeaders(token),
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      return { ok: false, error: (body as { error?: string }).error ?? `HTTP ${res.status}` }
+    }
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: (err as Error).message }
   }
 }

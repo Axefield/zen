@@ -7,9 +7,11 @@ export interface Props {
   title: string
   description?: string
   ogImage?: string
+  canonicalUrl?: string
+  noindex?: boolean
 }
 
-const { title, description, ogImage } = Astro.props
+const { title, description, ogImage, canonicalUrl, noindex } = Astro.props
 ---
 
 <!doctype html>
@@ -19,9 +21,11 @@ const { title, description, ogImage } = Astro.props
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title} | Truligon's Zen</title>
     {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex" />}
     <meta property="og:title" content={title} />
     {description && <meta property="og:description" content={description} />}
     {ogImage && <meta property="og:image" content={ogImage} />}
+    {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
     <meta name="generator" content="Astro" />
   </head>
   <body>

@@ -1,0 +1,104 @@
+---
+import DashboardLayout from "../../layouts/DashboardLayout.astro"
+import ContentForm from "../../components/ContentForm.astro"
+import { FIELDS, COLLECTION_LABELS } from "../../lib/content-fields"
+import { fetchStrapiSingle, updateContent, createContent } from "../../lib/api"
+import Button from "@truligon/ui/Button"
+
+export async function getStaticPaths() {
+  return []
+}
+
+const { slug = [] } = Astro.params
+const [collection, actionOrId] = slug
+const method = Astro.request.method
+
+const fields = FIELDS[collection]
+if (!fields) {
+  return Astro.redirect("/content", 302)
+}
+
+const label = COLLECTION_LABELS[collection] ?? collection
+const token = Astro.cookies.get("zen_token")?.value ?? ""
+
+let formData: Record<string, unknown> = {}
+let itemId: number | null = null
+let isNew = false
+let error = ""
+
+if (actionOrId === "new" || !actionOrId) {
+  isNew = true
+} else {
+  itemId = parseInt(actionOrId, 10)
+  if (isNaN(itemId)) {
+    return Astro.redirect("/content", 302)
+  }
+}
+
+if (method === "POST") {
+  const body = await Astro.request.formData()
+  const raw: Record<string, unknown> = {}
+  for (const [key, value] of body.entries()) {
+    if (key === "_method") continue
+    raw[key] = value
+  }
+
+  if (isNew) {
+    const result = await createContent(collection, raw, token)
+    if (result.ok) {
+      return Astro.redirect(`/content/${collection}`, 302)
+    }
+    error = result.error ?? "Failed to create"
+  } else if (itemId !== null) {
+    const result = await updateContent(collection, itemId, raw, token)
+    if (result.ok) {
+      return Astro.redirect(`/content/${collection}`, 302)
+    }
+    error = result.error ?? "Failed to update"
+  }
+  formData = raw
+} else if (!isNew && itemId !== null) {
+  const item = await fetchStrapiSingle<Record<string, unknown>>(collection, itemId)
+  if (item) {
+    delete (item as Record<string, unknown>).id
+    delete (item as Record<string, unknown>).createdAt
+    delete (item as Record<string, unknown>).updatedAt
+    delete (item as Record<string, unknown>).publishedAt
+    formData = item
+  }
+}
+
+const pageTitle = isNew ? `New ${label}` : `Edit ${label}`
+const actionPath = isNew ? `/content/${collection}/new` : `/content/${collection}/${itemId}`
+---
+
+<DashboardLayout title={pageTitle}>
+  <a href={`/content/${collection}`} class="back-link">← {label}s</a>
+  <h1>{pageTitle}</h1>
+
+  <ContentForm
+    fields={fields}
+    data={formData}
+    action={actionPath}
+    method={isNew ? "POST" : "PUT"}
+    error={error}
+  />
+</DashboardLayout>
+
+<style>
+  .back-link {
+    display: inline-block;
+    font-size: var(--text-small);
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-2);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--color-primary-500);
+    text-decoration: underline;
+  }
+  h1 {
+    font-size: var(--text-heading-1);
+    margin: 0 0 var(--spacing-6);
+  }
+</style>

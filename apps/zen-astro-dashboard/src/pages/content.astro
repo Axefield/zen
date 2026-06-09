@@ -1,16 +1,81 @@
 ---
 import DashboardLayout from "../layouts/DashboardLayout.astro"
+import { fetchStrapiCollection } from "../lib/api"
+import Card from "@truligon/ui/Card"
+import Badge from "@truligon/ui/Badge"
+import Heading from "@truligon/ui/Heading"
+import Text from "@truligon/ui/Text"
+import Grid from "@truligon/ui/Grid"
+
+interface ContentCount {
+  label: string
+  href: string
+  count: number
+  icon: string
+}
+
+const [pages, articles, products, courses, events] = await Promise.all([
+  fetchStrapiCollection("pages"),
+  fetchStrapiCollection("articles"),
+  fetchStrapiCollection("products"),
+  fetchStrapiCollection("courses"),
+  fetchStrapiCollection("events"),
+])
+
+const contentTypes: ContentCount[] = [
+  { label: "Pages", href: "/content/pages", count: pages.length, icon: "📄" },
+  { label: "Articles", href: "/content/articles", count: articles.length, icon: "✍" },
+  { label: "Products", href: "/content/products", count: products.length, icon: "🏷" },
+  { label: "Courses", href: "/content/courses", count: courses.length, icon: "📚" },
+  { label: "Events", href: "/content/events", count: events.length, icon: "📅" },
+]
 ---
 
 <DashboardLayout title="Content">
-  <h1>Content</h1>
-  <p class="subtitle">Manage pages, articles, products, courses, and events.</p>
-  <p class="placeholder">Content management views. Manage content via the <a href="http://localhost:1337/admin" target="_blank">Strapi admin panel</a>.</p>
+  <Heading level={1}>Content</Heading>
+  <Text color="secondary" class="subtitle">Manage pages, articles, products, courses, and events.</Text>
+
+  <Grid cols={3} gap="md">
+    {contentTypes.map((ct) => (
+      <a href={ct.href} class="content-card-link">
+        <Card variant="elevated" class="content-card">
+          <span class="card-icon">{ct.icon}</span>
+          <Heading level={3} size="h3" weight="semibold">{ct.label}</Heading>
+          <Text size="small" color="muted">{ct.count} items</Text>
+        </Card>
+      </a>
+    ))}
+  </Grid>
 </DashboardLayout>
 
 <style>
-  h1 { font-size: var(--text-heading-1); margin: 0 0 var(--spacing-2); }
-  .subtitle { color: var(--text-secondary); margin: 0 0 var(--spacing-8); }
-  .placeholder { color: var(--text-muted); font-style: italic; }
-  .placeholder a { color: var(--color-primary-500); }
+  .subtitle {
+    margin-bottom: var(--spacing-8);
+  }
+
+  .content-card-link {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .content-card-link:hover {
+    text-decoration: none;
+  }
+
+  .content-card {
+    text-align: center;
+    padding: var(--spacing-8);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  }
+
+  .content-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .card-icon {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: var(--spacing-3);
+  }
 </style>

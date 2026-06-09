@@ -1,0 +1,32 @@
+---
+export interface Props {
+  gap?: "none" | "sm" | "md" | "lg" | "xl"
+  direction?: "vertical" | "horizontal"
+  align?: "start" | "center" | "end" | "stretch"
+  class?: string
+}
+
+const { gap = "md", direction = "vertical", align = "stretch", class: className = "" } = Astro.props
+---
+
+<div class={`stack stack-${direction} gap-${gap} align-${align} ${className}`}>
+  <slot />
+</div>
+
+<style>
+  .stack { display: flex; }
+
+  .stack-vertical { flex-direction: column; }
+  .stack-horizontal { flex-direction: row; flex-wrap: wrap; }
+
+  .gap-none { gap: 0; }
+  .gap-sm { gap: var(--spacing-2); }
+  .gap-md { gap: var(--spacing-4); }
+  .gap-lg { gap: var(--spacing-6); }
+  .gap-xl { gap: var(--spacing-8); }
+
+  .align-start { align-items: flex-start; }
+  .align-center { align-items: center; }
+  .align-end { align-items: flex-end; }
+  .align-stretch { align-items: stretch; }
+</style>

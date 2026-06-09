@@ -1,0 +1,94 @@
+---
+import CallToAction from "./CallToAction.astro"
+export interface Props {
+  headline: string
+  subheadline?: string
+  backgroundMedia?: {
+    url: string
+    alternativeText?: string
+    formats?: Record<string, { url: string }>
+  }
+  primaryCta?: {
+    buttonText: string
+    buttonUrl: string
+    variant: "primary" | "secondary" | "outline" | "ghost"
+    headline?: string
+    body?: string
+  }
+  class?: string
+}
+
+const { headline, subheadline, backgroundMedia, primaryCta, class: className = "" } = Astro.props
+const bgUrl = backgroundMedia?.url
+---
+
+<section class={`hero ${className}`}>
+  {bgUrl && <img src={bgUrl} alt={backgroundMedia?.alternativeText ?? ""} class="hero-bg" />}
+  <div class="hero-overlay">
+    <h1 class="hero-headline">{headline}</h1>
+    {subheadline && <p class="hero-subheadline">{subheadline}</p>}
+    {primaryCta && (
+      <div class="hero-cta">
+        <CallToAction {...primaryCta} />
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: var(--spacing-16) var(--spacing-6);
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+  }
+
+  .hero-overlay {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    color: var(--text-inverse);
+  }
+
+  .hero-bg ~ .hero-overlay {
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+
+  .hero-headline {
+    font-size: var(--text-display);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: -0.02em;
+    line-height: var(--line-height-tight);
+    margin: 0 0 var(--spacing-4);
+  }
+
+  .hero-subheadline {
+    font-size: var(--text-heading-3);
+    opacity: 0.9;
+    margin: 0 0 var(--spacing-8);
+    line-height: var(--line-height-normal);
+  }
+
+  .hero-cta {
+    display: flex;
+    gap: var(--spacing-3);
+    justify-content: center;
+  }
+
+  .hero-bg ~ .hero-overlay .hero-subheadline {
+    opacity: 0.85;
+  }
+</style>

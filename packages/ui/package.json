@@ -10,7 +10,16 @@
     "./Card": "./src/components/Card.astro",
     "./Input": "./src/components/Input.astro",
     "./Badge": "./src/components/Badge.astro",
-    "./Select": "./src/components/Select.astro"
+    "./Select": "./src/components/Select.astro",
+    "./Heading": "./src/components/Heading.astro",
+    "./Text": "./src/components/Text.astro",
+    "./Prose": "./src/components/Prose.astro",
+    "./Container": "./src/components/Container.astro",
+    "./Grid": "./src/components/Grid.astro",
+    "./Stack": "./src/components/Stack.astro",
+    "./dynamic-zone/*": "./src/components/dynamic-zone/*.astro",
+    "./dynamic-zone/types": "./src/components/dynamic-zone/types.ts",
+    "./dynamic-zone": "./src/components/dynamic-zone/index.ts"
   },
   "scripts": {
     "build": "echo 'no build needed'",

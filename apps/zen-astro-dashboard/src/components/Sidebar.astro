@@ -5,17 +5,22 @@ const navigation = [
   { label: "Content", href: "/content", icon: "file" },
   { label: "Agents", href: "/agents", icon: "bot" },
   { label: "Experiments", href: "/experiments", icon: "beaker" },
-  { label: "Settings", href: "/settings", icon: "gear" },
 ]
 
 const user = Astro.locals.user
+const currentPath = Astro.url.pathname
+
+function isActive(itemHref: string): boolean {
+  if (itemHref === "/content") return currentPath.startsWith("/content")
+  return currentPath === itemHref
+}
 ---
 
 <aside class="sidebar">
   <div class="brand">Truligon's Zen</div>
   <nav aria-label="Dashboard navigation">
     {navigation.map((item) => (
-      <a href={item.href} class={Astro.url.pathname === item.href ? "active" : ""}>
+      <a href={item.href} class={isActive(item.href) ? "active" : ""}>
         <span class="icon" aria-hidden="true">{item.icon === "grid" ? "▦" : item.icon === "chart" ? "📊" : item.icon === "file" ? "📄" : item.icon === "bot" ? "🤖" : item.icon === "beaker" ? "🔬" : "⚙"}</span>
         {item.label}
       </a>

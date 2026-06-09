@@ -1,0 +1,122 @@
+---
+import DashboardLayout from "../../layouts/DashboardLayout.astro"
+import { fetchStrapiCollection } from "../../lib/api"
+import Card from "@truligon/ui/Card"
+import Badge from "@truligon/ui/Badge"
+import Heading from "@truligon/ui/Heading"
+import Text from "@truligon/ui/Text"
+import Button from "@truligon/ui/Button"
+import DeleteButton from "../../components/DeleteButton.tsx"
+import "../../components/DeleteButton.css"
+
+const API_URL = import.meta.env.INTERNAL_API_URL || process.env.INTERNAL_API_URL || "http://ai-engine:4000"
+
+interface StrapiProduct {
+  id: number
+  name: string
+  slug: string
+  price: number
+  currency: string
+}
+
+const products = await fetchStrapiCollection<StrapiProduct>("products", {
+  sort: "name:asc",
+  "pagination[limit]": "100",
+})
+---
+
+<DashboardLayout title="Products">
+  <div class="header-row">
+    <div>
+      <a href="/content" class="back-link">← Content</a>
+      <Heading level={1}>Products</Heading>
+      <Text color="secondary" class="subtitle">{products.length} product{products.length !== 1 ? "s" : ""} total.</Text>
+    </div>
+    <Button href="/content/products/new" variant="primary">New Product</Button>
+  </div>
+
+  {products.length > 0 ? (
+    <div class="table-wrapper">
+      <table class="content-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Slug</th>
+            <th>Price</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {products.map((product) => (
+            <tr>
+              <td><strong>{product.name}</strong></td>
+              <td><code>/{product.slug}</code></td>
+              <td>
+                <Badge variant="default">{product.currency} {product.price}</Badge>
+              </td>
+              <td class="actions-cell">
+                <a href={`/content/products/${product.id}`} class="action-link">Edit</a>
+                <DeleteButton collection="products" id={product.id} title={product.name} apiUrl={API_URL} client:load />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <Card padding="lg">
+      <Text color="muted">No products found.</Text>
+    </Card>
+  )}
+</DashboardLayout>
+
+<style>
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-6);
+  }
+  .back-link {
+    display: inline-block;
+    font-size: var(--text-small);
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-2);
+    text-decoration: none;
+  }
+  .back-link:hover { color: var(--color-primary-500); text-decoration: underline; }
+  .subtitle { margin: var(--spacing-1) 0 0; }
+  .table-wrapper {
+    overflow-x: auto;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+  }
+  .content-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-small);
+  }
+  .content-table th {
+    text-align: left;
+    padding: var(--spacing-3) var(--spacing-4);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-light);
+    background: var(--color-neutral-50);
+  }
+  .content-table td {
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--border-light);
+  }
+  .content-table tr:last-child td { border-bottom: none; }
+  code { font-family: var(--font-family-mono); font-size: 0.9em; color: var(--text-secondary); }
+  .actions-cell {
+    white-space: nowrap;
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+  }
+  .action-link { font-size: var(--text-small); color: var(--color-primary-500); text-decoration: none; }
+  .action-link:hover { text-decoration: underline; }
+</style>

@@ -1,13 +1,32 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro"
-import { fetchCollection } from "../../lib/strapi"
+import { fetchCollection, strapiImage } from "../../lib/strapi"
 
 const { slug } = Astro.params
 
-interface StrapiModule {
+interface StrapiLesson {
   id: number
   title: string
-  lessons?: { id: number; title: string }[]
+  description?: string
+  videoUrl?: string
+  duration?: number
+  content?: string
+}
+
+interface StrapiModule {
+  id: number
+  name: string
+  description?: string
+  lessons?: StrapiLesson[]
+}
+
+interface StrapiSeo {
+  id: number
+  title: string
+  description: string
+  ogImage?: { url: string; alternativeText?: string }
+  canonicalUrl?: string
+  noindex?: boolean
 }
 
 interface StrapiCourse {
@@ -18,6 +37,7 @@ interface StrapiCourse {
   price?: number
   currency: string
   modules?: StrapiModule[]
+  seo?: StrapiSeo
   createdAt: string
   publishedAt: string
 }
@@ -26,7 +46,8 @@ let course: StrapiCourse | null = null
 try {
   const courses = await fetchCollection<StrapiCourse>("courses", {
     "filters[slug][$eq]": slug,
-    "populate[modules][populate][lessons]": "true"
+    "populate[modules][populate][lessons]": "true",
+    "populate[seo][populate][ogImage]": "true"
   })
   course = courses.length > 0 ? courses[0] : null
 } catch {}
@@ -34,9 +55,18 @@ try {
 if (!course) {
   return Astro.redirect("/courses", 307)
 }
+
+const seo = course.seo
+const ogImage = seo?.ogImage ? strapiImage(seo.ogImage.url) : undefined
 ---
 
-<BaseLayout title={course.title} description={course.description}>
+<BaseLayout
+  title={seo?.title ?? course.title}
+  description={seo?.description ?? course.description}
+  ogImage={ogImage}
+  canonicalUrl={seo?.canonicalUrl}
+  noindex={seo?.noindex}
+>
   <article class="course">
     <header>
       <p class="breadcrumb"><a href="/courses">Courses</a> /</p>
@@ -55,11 +85,16 @@ if (!course) {
         <h2>Course Modules</h2>
         {course.modules.map((mod) => (
           <div class="module">
-            <h3>{mod.title}</h3>
+            <h3>{mod.name}</h3>
+            {mod.description && <p class="mod-desc">{mod.description}</p>}
             {mod.lessons && mod.lessons.length > 0 && (
               <ul class="lessons">
                 {mod.lessons.map((lesson) => (
-                  <li>{lesson.title}</li>
+                  <li>
+                    <strong>{lesson.title}</strong>
+                    {lesson.duration && <span class="lesson-duration">{lesson.duration} min</span>}
+                    {lesson.description && <p class="lesson-desc">{lesson.description}</p>}
+                  </li>
                 ))}
               </ul>
             )}
@@ -113,16 +148,6 @@ if (!course) {
     margin: 0 0 var(--spacing-4);
   }
 
-  .body :global(h2) {
-    margin: var(--spacing-8) 0 var(--spacing-3);
-    font-size: var(--text-heading-2);
-  }
-
-  .body :global(h3) {
-    margin: var(--spacing-6) 0 var(--spacing-2);
-    font-size: var(--text-heading-3);
-  }
-
   .modules {
     margin-top: var(--spacing-10);
     border-top: 1px solid var(--border-light);
@@ -146,14 +171,40 @@ if (!course) {
     margin: 0 0 var(--spacing-2);
   }
 
+  .mod-desc {
+    color: var(--text-secondary);
+    font-size: var(--text-small);
+    margin: 0 0 var(--spacing-3);
+  }
+
   .lessons {
     margin: var(--spacing-2) 0 0;
-    padding-left: var(--spacing-5);
+    padding-left: 0;
+    list-style: none;
     color: var(--text-secondary);
     font-size: var(--text-small);
   }
 
   .lessons li {
-    margin-bottom: var(--spacing-1);
+    padding: var(--spacing-2) 0;
+    border-top: 1px solid var(--border-light);
+  }
+
+  .lessons li:first-child {
+    border-top: none;
+  }
+
+  .lesson-duration {
+    display: inline-block;
+    margin-left: var(--spacing-2);
+    padding: 1px var(--spacing-2);
+    background: var(--color-neutral-100);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-caption);
+  }
+
+  .lesson-desc {
+    margin: var(--spacing-1) 0 0;
+    color: var(--text-muted);
   }
 </style>

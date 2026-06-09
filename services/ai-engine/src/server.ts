@@ -2,15 +2,13 @@ import { createServer, IncomingMessage, ServerResponse } from "node:http"
 import { indexDocument, removeDocument, search, getIndexStats, isHealthy, IndexableDocument } from "./search.js"
 import { handleLogin, handleRegister, handleMe } from "./routes/auth.js"
 import { handleChat, handleModels } from "./routes/ai.js"
+import { handleContentList, handleContentGet, handleContentCreate, handleContentUpdate, handleContentDelete } from "./routes/content.js"
 import { seedDefaultUser } from "./auth.js"
+import { handleMcpGet, handleMcpPost } from "./mcp.js"
+import { verifyToken } from "./auth.js"
+import { HEALTH } from "./constants.js"
 
 const port = Number(process.env.PORT ?? 4000)
-
-const HEALTH = {
-  status: "ok" as const,
-  service: "ai-engine" as const,
-  modules: ["api", "analytics", "ai", "type-system", "search"] as string[],
-}
 
 async function readBody(req: IncomingMessage): Promise<string> {
   const chunks: Buffer[] = []
@@ -29,6 +27,12 @@ function corsHeaders(res: ServerResponse) {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 }
 
+function isAuthenticated(req: IncomingMessage): boolean {
+  const authHeader = req.headers.authorization
+  if (!authHeader?.startsWith("Bearer ")) return false
+  return verifyToken(authHeader.slice(7)) !== null
+}
+
 async function router(req: IncomingMessage, res: ServerResponse) {
   corsHeaders(res)
 
@@ -40,6 +44,17 @@ async function router(req: IncomingMessage, res: ServerResponse) {
 
   const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`)
   const path = url.pathname
+
+  // MCP protocol routes
+  if (path === "/mcp" && req.method === "GET") {
+    await handleMcpGet(req, res)
+    return
+  }
+
+  if (path === "/mcp/messages" && req.method === "POST") {
+    await handleMcpPost(req, res)
+    return
+  }
 
   if (path === "/health") {
     const searchOk = await isHealthy()
@@ -69,6 +84,38 @@ async function router(req: IncomingMessage, res: ServerResponse) {
 
   if (path === "/api/ai/models" && req.method === "GET") {
     await handleModels(req, res)
+    return
+  }
+
+  // Protected content CRUD routes (require auth)
+  const contentListMatch = path.match(/^\/api\/content\/(articles|products|courses|events|pages|categories)$/)
+  const contentDetailMatch = path.match(/^\/api\/content\/(articles|products|courses|events|pages|categories)\/(\d+)$/)
+
+  if (contentListMatch && req.method === "GET") {
+    await handleContentList(req, res)
+    return
+  }
+
+  if (contentDetailMatch && req.method === "GET") {
+    await handleContentGet(req, res)
+    return
+  }
+
+  if (contentListMatch && req.method === "POST") {
+    if (!isAuthenticated(req)) { json(res, 401, { error: "Unauthorized" }); return }
+    await handleContentCreate(req, res)
+    return
+  }
+
+  if (contentDetailMatch && req.method === "PUT") {
+    if (!isAuthenticated(req)) { json(res, 401, { error: "Unauthorized" }); return }
+    await handleContentUpdate(req, res)
+    return
+  }
+
+  if (contentDetailMatch && req.method === "DELETE") {
+    if (!isAuthenticated(req)) { json(res, 401, { error: "Unauthorized" }); return }
+    await handleContentDelete(req, res)
     return
   }
 

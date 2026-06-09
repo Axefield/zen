@@ -1,0 +1,86 @@
+---
+export interface Props {
+  quote: string
+  author: string
+  role?: string
+  company?: string
+  avatar?: {
+    url: string
+    alternativeText?: string
+    formats?: Record<string, { url: string }>
+  }
+  class?: string
+}
+
+const { quote, author, role, company, avatar, class: className = "" } = Astro.props
+const avatarUrl = avatar?.formats?.thumbnail?.url ?? avatar?.url
+---
+
+<figure class={`testimonial ${className}`}>
+  <blockquote class="testimonial-quote">
+    <p>"{quote}"</p>
+  </blockquote>
+  <figcaption class="testimonial-attribution">
+    {avatarUrl && (
+      <img src={avatarUrl} alt={avatar?.alternativeText ?? author} class="testimonial-avatar" />
+    )}
+    <div>
+      <strong class="testimonial-author">{author}</strong>
+      {(role || company) && (
+        <span class="testimonial-role">
+          {role}{role && company && " · "}{company}
+        </span>
+      )}
+    </div>
+  </figcaption>
+</figure>
+
+<style>
+  .testimonial {
+    max-width: 640px;
+    margin: var(--spacing-8) auto;
+    padding: var(--spacing-8) var(--spacing-6);
+    text-align: center;
+  }
+
+  .testimonial-quote {
+    margin: 0 0 var(--spacing-6);
+    border: none;
+    padding: 0;
+    background: none;
+  }
+
+  .testimonial-quote p {
+    font-size: var(--text-heading-3);
+    font-style: italic;
+    line-height: var(--line-height-relaxed);
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .testimonial-attribution {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-3);
+  }
+
+  .testimonial-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+  }
+
+  .testimonial-author {
+    display: block;
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--text-small);
+  }
+
+  .testimonial-role {
+    display: block;
+    font-size: var(--text-caption);
+    color: var(--text-secondary);
+  }
+</style>

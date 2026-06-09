@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro"
-import { fetchCollection } from "../../lib/strapi"
+import { fetchCollection, strapiImage } from "../../lib/strapi"
 
 const { slug } = Astro.params
 
@@ -8,8 +8,17 @@ interface StrapiTicketTier {
   id: number
   name: string
   price: number
-  currency?: string
   description?: string
+  capacity?: number
+}
+
+interface StrapiSeo {
+  id: number
+  title: string
+  description: string
+  ogImage?: { url: string; alternativeText?: string }
+  canonicalUrl?: string
+  noindex?: boolean
 }
 
 interface StrapiEvent {
@@ -23,6 +32,7 @@ interface StrapiEvent {
   virtualUrl?: string
   capacity?: number
   ticketTiers?: StrapiTicketTier[]
+  seo?: StrapiSeo
   createdAt: string
   publishedAt: string
 }
@@ -31,7 +41,8 @@ let event: StrapiEvent | null = null
 try {
   const events = await fetchCollection<StrapiEvent>("events", {
     "filters[slug][$eq]": slug,
-    "populate[ticketTiers]": "true"
+    "populate[ticketTiers]": "true",
+    "populate[seo][populate][ogImage]": "true"
   })
   event = events.length > 0 ? events[0] : null
 } catch {}
@@ -43,9 +54,18 @@ if (!event) {
 const locationLabel = event.locationType === "physical" ? "In Person" : event.locationType === "virtual" ? "Online" : "Hybrid"
 const eventDate = new Date(event.date)
 const isPast = eventDate < new Date()
+
+const seo = event.seo
+const ogImage = seo?.ogImage ? strapiImage(seo.ogImage.url) : undefined
 ---
 
-<BaseLayout title={event.title} description={event.description}>
+<BaseLayout
+  title={seo?.title ?? event.title}
+  description={seo?.description ?? event.description}
+  ogImage={ogImage}
+  canonicalUrl={seo?.canonicalUrl}
+  noindex={seo?.noindex}
+>
   <article class="event">
     <header>
       <p class="breadcrumb"><a href="/events">Events</a> /</p>
@@ -80,10 +100,11 @@ const isPast = eventDate < new Date()
               <div>
                 <h3>{tier.name}</h3>
                 {tier.description && <p>{tier.description}</p>}
+                {tier.capacity && <p class="tier-cap">Max: {tier.capacity} tickets</p>}
               </div>
               <span class="tier-price">
                 {new Intl.NumberFormat("en-US", {
-                  style: "currency", currency: tier.currency || "USD"
+                  style: "currency", currency: "USD"
                 }).format(tier.price)}
               </span>
             </div>
@@ -207,6 +228,12 @@ const isPast = eventDate < new Date()
     margin: 0;
     font-size: var(--text-small);
     color: var(--text-secondary);
+  }
+
+  .tier-cap {
+    margin-top: var(--spacing-1);
+    font-size: var(--text-caption);
+    color: var(--text-muted);
   }
 
   .tier-price {

@@ -1,0 +1,81 @@
+---
+import Hero from "./Hero.astro"
+import RichTextBlock from "./RichTextBlock.astro"
+import CallToAction from "./CallToAction.astro"
+import MediaGallery from "./MediaGallery.astro"
+import PricingTable from "./PricingTable.astro"
+import TestimonialCard from "./TestimonialCard.astro"
+import type { DynamicBlock } from "./types"
+
+export type { DynamicBlock }
+
+export interface Props {
+  blocks: DynamicBlock[]
+  resolveMediaUrl?: (url: string) => string
+  class?: string
+}
+
+const { blocks = [], resolveMediaUrl, class: className = "" } = Astro.props
+
+function resolveUrl(url: string): string {
+  return resolveMediaUrl ? resolveMediaUrl(url) : url
+}
+
+function resolveMedia(m: Record<string, unknown> | undefined | null): Record<string, unknown> | undefined {
+  if (!m) return undefined
+  return { ...m, url: resolveUrl((m as { url?: string }).url ?? "") }
+}
+
+function resolveMediaArray(arr: unknown[] | undefined | null): Record<string, unknown>[] | undefined {
+  if (!arr) return undefined
+  return arr.map((m) => resolveMedia(m as Record<string, unknown>))
+}
+---
+
+<div class={`dynamic-zone ${className}`}>
+  {blocks.map((block) => {
+    const b = block as Record<string, unknown>
+    switch (block.__component) {
+      case "shared.hero":
+        return <Hero
+          headline={b.headline as string}
+          subheadline={b.subheadline as string | undefined}
+          backgroundMedia={resolveMedia(b.backgroundMedia as Record<string, unknown>) as Record<string, unknown> as any}
+          primaryCta={b.primaryCta ? { ...(b.primaryCta as Record<string, unknown>), buttonText: (b.primaryCta as Record<string, string>).buttonText ?? "", buttonUrl: (b.primaryCta as Record<string, string>).buttonUrl ?? "" } as any : undefined}
+        />
+      case "shared.rich-text-block":
+        return <RichTextBlock
+          body={b.body as string}
+          media={resolveMediaArray(b.media) as any}
+        />
+      case "shared.call-to-action":
+        return <CallToAction
+          headline={b.headline as string | undefined}
+          body={b.body as string | undefined}
+          buttonText={b.buttonText as string}
+          buttonUrl={b.buttonUrl as string}
+          variant={(b.variant as "primary" | "secondary" | "outline" | "ghost") ?? "primary"}
+        />
+      case "shared.media-gallery":
+        return <MediaGallery
+          media={resolveMediaArray(b.media) as any}
+          layout={(b.layout as "grid" | "carousel" | "masonry" | "single") ?? "grid"}
+        />
+      case "shared.pricing-table":
+        return <PricingTable
+          headline={b.headline as string | undefined}
+          tiers={b.tiers as any[]}
+        />
+      case "shared.testimonial-card":
+        return <TestimonialCard
+          quote={b.quote as string}
+          author={b.author as string}
+          role={b.role as string | undefined}
+          company={b.company as string | undefined}
+          avatar={resolveMedia(b.avatar as Record<string, unknown>) as any}
+        />
+      default:
+        return <p class="unknown-block">Unknown block: {block.__component}</p>
+    }
+  })}
+</div>

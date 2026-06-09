@@ -1,0 +1,174 @@
+---
+import Input from "@truligon/ui/Input"
+import Select from "@truligon/ui/Select"
+import Button from "@truligon/ui/Button"
+import Badge from "@truligon/ui/Badge"
+import type { FormField } from "../lib/content-fields"
+
+export interface Props {
+  fields: FormField[]
+  data?: Record<string, unknown>
+  action: string
+  method?: "POST" | "PUT"
+  error?: string
+}
+
+const { fields, data = {}, action, method = "POST", error } = Astro.props
+
+function val(name: string): string {
+  const v = data[name]
+  if (v === null || v === undefined) return ""
+  if (typeof v === "boolean") return v ? "true" : ""
+  return String(v)
+}
+
+function boolVal(name: string): boolean {
+  return !!data[name]
+}
+---
+
+<form method="POST" action={action} class="content-form">
+  <input type="hidden" name="_method" value={method} />
+
+  {error && (
+    <div class="form-error">
+      <Badge variant="error">Error</Badge>
+      <span>{error}</span>
+    </div>
+  )}
+
+  {fields.map((field) => {
+    if (field.type === "select") {
+      return (
+        <Select
+          name={field.name}
+          label={field.label}
+          options={field.options ?? []}
+          value={val(field.name)}
+          required={field.required}
+        />
+      )
+    }
+
+    if (field.type === "boolean") {
+      const checked = boolVal(field.name)
+      return (
+        <div class="boolean-field">
+          <label>
+            <input type="hidden" name={field.name} value="false" />
+            <input type="checkbox" name={field.name} value="true" checked={checked} />
+            {field.label}{field.required && <span class="required">*</span>}
+          </label>
+        </div>
+      )
+    }
+
+    if (field.type === "textarea") {
+      return (
+        <div class="field">
+          <label for={field.name}>{field.label}{field.required && <span class="required">*</span>}</label>
+          <textarea
+            id={field.name}
+            name={field.name}
+            required={field.required}
+            rows={8}
+          >{val(field.name)}</textarea>
+        </div>
+      )
+    }
+
+    return (
+      <Input
+        name={field.name}
+        label={field.label}
+        type={field.type as "text" | "number" | "date"}
+        value={val(field.name)}
+        required={field.required}
+      />
+    )
+  })}
+
+  <div class="form-actions">
+    <Button type="submit" variant="primary">
+      {method === "POST" ? "Create" : "Save Changes"}
+    </Button>
+    <Button type="button" variant="ghost" onclick="history.back()">Cancel</Button>
+  </div>
+</form>
+
+<style>
+  .content-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+    max-width: 640px;
+  }
+
+  .form-error {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3);
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-md);
+    font-size: var(--text-small);
+    color: #991b1b;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+  }
+
+  .field label {
+    font-size: var(--text-small);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+  }
+
+  .field textarea {
+    padding: var(--spacing-2) var(--spacing-3);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    font-size: var(--text-body);
+    font-family: inherit;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    resize: vertical;
+  }
+
+  .field textarea:focus {
+    outline: none;
+    border-color: var(--color-primary-400);
+    box-shadow: 0 0 0 3px var(--color-primary-100);
+  }
+
+  .required {
+    color: var(--color-error);
+    margin-left: var(--spacing-1);
+  }
+
+  .boolean-field label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-size: var(--text-small);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+  }
+
+  .boolean-field input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: var(--spacing-3);
+    padding-top: var(--spacing-4);
+    border-top: 1px solid var(--border-light);
+  }
+</style>

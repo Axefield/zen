@@ -1,0 +1,79 @@
+---
+export interface Props {
+  media: Array<{
+    url: string
+    alternativeText?: string
+    formats?: Record<string, { url: string }>
+  }>
+  layout?: "grid" | "carousel" | "masonry" | "single"
+  class?: string
+}
+
+const { media, layout = "grid", class: className = "" } = Astro.props
+---
+
+<section class={`gallery gallery-${layout} ${className}`}>
+  {media.map((m) => (
+    <figure class="gallery-item">
+      <img
+        src={m.url}
+        alt={m.alternativeText ?? ""}
+        loading="lazy"
+      />
+    </figure>
+  ))}
+</section>
+
+<style>
+  .gallery {
+    padding: var(--spacing-8) var(--spacing-6);
+  }
+
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-4);
+  }
+
+  .gallery-single {
+    display: flex;
+    justify-content: center;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .gallery-masonry {
+    columns: 3;
+    column-gap: var(--spacing-4);
+  }
+
+  .gallery-masonry .gallery-item {
+    break-inside: avoid;
+    margin-bottom: var(--spacing-4);
+  }
+
+  .gallery-item {
+    margin: 0;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+  }
+
+  .gallery-item img {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: transform var(--transition-normal);
+  }
+
+  .gallery-item img:hover {
+    transform: scale(1.03);
+  }
+
+  @media (max-width: 768px) {
+    .gallery-masonry { columns: 2; }
+  }
+
+  @media (max-width: 480px) {
+    .gallery-masonry { columns: 1; }
+  }
+</style>
