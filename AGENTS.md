@@ -87,15 +87,17 @@ Designed to power any digital product (SaaS, e-commerce, publishing, education, 
 
 All 7 Docker services run. Module directories exist. `.gitignore`, `.env.example`, `.dockerignore` are set up.
 
-### Phase 1 — Type System (80% Complete)
+### Phase 1 — Type System (100% Complete)
 
 **Done:**
 - 49 entity interfaces across 8 modules (research, ux, design-system, content, revenue, analytics, ai, experimentation)
 - 12 sub-types, 6 base types
 - 40+ Zod validation schemas in `packages/types/src/validation.ts`
 - All 6 packages compile with 0 errors (`tsc --noEmit`)
-
-**Not done:** Monorepo tool (Turborepo/Nx), CI check automation.
+- Turborepo 2.9.17 configured with `turbo.json` task pipeline (`build`, `typecheck`, `dev`, `lint`, `test`)
+- Root `package.json` scripts use turbo for `build` and `dev`; `typecheck` runs `tsc --noEmit` (root, excludes `services/`)
+- `typecheck` and `build` scripts added to all 6 packages, 2 apps, and ai-engine
+- GitHub Actions CI workflow (`.github/workflows/ci.yml`) — validates typecheck + build on push/PR to `main`
 
 ### Phase 2 — Content Layer — Strapi (80% Complete)
 
@@ -140,9 +142,18 @@ All 7 Docker services run. Module directories exist. `.gitignore`, `.env.example
 - ✅ Design tokens CSS (99 custom properties — colors, typography, spacing, radii, shadows)
 - ❌ No reusable component primitives (Button, Card, Input, etc.)
 
-### Phase 4-8 — Not Started (Stubs Only)
+### Phase 4 — AI Engine — Search (Complete)
 
-- ai-engine: bare `node:http` server with only `/health` endpoint
+**Done:**
+- ✅ Meilisearch integration via `services/ai-engine/src/search.ts`
+- ✅ 4 search API endpoints: `/api/search/query`, `/api/search/index`, `/api/search/reindex`, `/api/search/stats`
+- ✅ Strapi lifecycle hooks sync content on create/update/delete
+- ✅ Cross-collection search (articles, products, courses, events) returned grouped by type
+- ✅ Search results page at `/search?q=<term>` in `zen-astro-web`
+- ✅ Search link in header navigation
+- ✅ 11 documents indexed (4 articles, 3 products, 2 courses, 2 events)
+
+### Phase 5-8 — Not Started (Stubs Only)
 - Payments: pure type re-exports, no Stripe integration
 - Analytics: pure type re-exports, no event tracking
 - Auth: defines 3 interfaces only, no middleware
@@ -185,6 +196,16 @@ All 7 Docker services run. Module directories exist. `.gitignore`, `.env.example
 **Decision:** Both Astro apps use `output: "server"` (SSR mode).
 
 **Why:** Content comes from Strapi at request time. Static generation would require pre-building every page at image build time, which doesn't work when Strapi data changes independently of deployments.
+
+### Turborepo 2.x Task Pipeline
+
+**Decision:** Use `tasks` (v2 API) in `turbo.json`, not the deprecated `pipeline` key.
+
+**Why:** Turbo 2.x requires the `tasks` key and `packageManager` field in root `package.json`. The task graph defines `build` (dependsOn `^build`), `typecheck` (dependsOn `^build`), `dev` (persistent), `lint`, and `test`.
+
+**CI context:** The entire `turbo run typecheck` pipeline only works from a single context where all workspace dependencies are installed (i.e., GitHub Actions with `npm ci`). In local Docker development, each service container has its own `node_modules` volume — use `docker compose exec <service> npm run typecheck` for standalone services (ai-engine, strapi).
+
+**When to revisit:** When adding new workspaces or upgrading Turbo.
 
 ---
 
@@ -293,6 +314,8 @@ docker compose logs --tail=50 <service_name>
 | `.env.example` | All required environment variables |
 | `ROADMAP.md` | Implementation roadmap by phase |
 | `README.md` | Project overview and quick start |
+| `.github/workflows/ci.yml` | CI pipeline (typecheck + build on push/PR) |
+| `turbo.json` | Turborepo task pipeline configuration |
 
 ### packages/types
 
@@ -384,6 +407,12 @@ docker compose up -d --build zen-astro-web
 
 **Fix:** Restart the container: `docker compose restart <service>`. Docker bind mounts on Windows sometimes have delayed file event propagation.
 
+### Turbo Typecheck Fails for Standalone Services
+
+**Symptom:** `turbo run typecheck` run from the web or dashboard container fails for `ai-engine` with module resolution errors (`Cannot find module 'meilisearch'`, `Cannot find name 'process'`).
+
+**Fix:** This is expected. The shared Astro containers (web, dashboard) mount their own `node_modules` volumes and don't have access to standalone service dependencies. Run typecheck for standalone services in their own container: `docker compose exec ai-engine npm run typecheck`. In CI (GitHub Actions), `turbo run typecheck` works because `npm ci` installs all workspace dependencies in a single context.
+
 ### Astro SSR Routes Return 404/307
 
 **Symptom:** Dynamic routes like `/articles/[slug]` return 307 redirect or 404.
@@ -434,7 +463,8 @@ docker compose up -d --build zen-astro-web
 - **Commit messages** summarize what and why in 1-2 sentences
 - **No commits** containing secrets, `.env` files, or credentials
 - **PR descriptions** explain the problem, solution, and testing approach
-- **Before committing**: run `npm run typecheck` (root) to verify compilation
+- **Before committing**: run `npm run typecheck` (root) to verify packages and apps compile; run `docker compose exec ai-engine npm run typecheck` for ai-engine typecheck
+- **CI**: pushes to `main` and PRs trigger `.github/workflows/ci.yml` (typecheck + build)
 
 ---
 

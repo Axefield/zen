@@ -2,7 +2,58 @@
 
 const { createCoreService } = require("@strapi/strapi").factories;
 
+const AI_ENGINE_URL = process.env.AI_ENGINE_URL || "http://ai-engine:4000";
+const SEARCHABLE_TYPES = ["api::article.article", "api::product.product", "api::course.course", "api::event.event"];
+
+function getCollectionName(uid) {
+  const map = {
+    "api::article.article": "articles",
+    "api::product.product": "products",
+    "api::course.course": "courses",
+    "api::event.event": "events",
+  };
+  return map[uid];
+}
+
+async function indexInMeilisearch(event) {
+  const { uid, result } = event;
+  const collection = getCollectionName(uid);
+  if (!collection || !result) return;
+  try {
+    await fetch(`${AI_ENGINE_URL}/api/search/index`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ collection, document: result }),
+    });
+  } catch (err) {
+    console.error(`Failed to index ${collection}/${result.id}:`, err.message);
+  }
+}
+
+async function removeFromMeilisearch(event) {
+  const { uid, result } = event;
+  const collection = getCollectionName(uid);
+  if (!collection || !result) return;
+  try {
+    await fetch(`${AI_ENGINE_URL}/api/search/index/${collection}/${result.id}`, { method: "DELETE" });
+  } catch (err) {
+    console.error(`Failed to remove ${collection}/${result.id}:`, err.message);
+  }
+}
+
 module.exports = {
+  async register({ strapi }) {
+    strapi.db.lifecycles.subscribe((event) => {
+      if (SEARCHABLE_TYPES.includes(event.uid)) {
+        if (event.action === "afterCreate" || event.action === "afterUpdate") {
+          indexInMeilisearch(event);
+        } else if (event.action === "beforeDelete") {
+          removeFromMeilisearch(event);
+        }
+      }
+    });
+  },
+
   async bootstrap({ strapi }) {
     let hasRun;
     try {
@@ -91,5 +142,30 @@ module.exports = {
     });
 
     console.log("Content seed complete.");
+
+    // Reindex all existing content into Meilisearch
+    const contentTypes = [
+      { uid: "api::article.article", collection: "articles", fields: ["id", "title", "slug", "excerpt"] },
+      { uid: "api::product.product", collection: "products", fields: ["id", "name", "slug", "description"] },
+      { uid: "api::course.course", collection: "courses", fields: ["id", "title", "slug", "description"] },
+      { uid: "api::event.event", collection: "events", fields: ["id", "title", "slug", "description"] },
+    ];
+    for (const ct of contentTypes) {
+      try {
+        const entries = await strapi.db.query(ct.uid).findMany({ select: ct.fields, limit: 200 });
+        for (const entry of entries) {
+          try {
+            await fetch(`${AI_ENGINE_URL}/api/search/index`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ collection: ct.collection, document: entry }),
+            });
+          } catch {}
+        }
+        console.log(`Indexed ${entries.length} ${ct.collection}`);
+      } catch (err) {
+        console.error(`Failed to reindex ${ct.collection}:`, err.message);
+      }
+    }
   },
 };

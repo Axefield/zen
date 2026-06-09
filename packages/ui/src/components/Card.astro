@@ -1,0 +1,56 @@
+---
+export interface Props {
+  variant?: "default" | "elevated" | "bordered"
+  padding?: "none" | "sm" | "md" | "lg"
+  class?: string
+}
+
+const { variant = "default", padding = "md", class: className = "" } = Astro.props
+---
+
+<div class={`card card-${variant} card-pad-${padding} ${className}`}>
+  <slot />
+</div>
+
+<style>
+  .card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    transition: box-shadow var(--transition-fast);
+  }
+
+  .card-default {
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-light);
+  }
+
+  .card-elevated {
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-light);
+  }
+
+  .card-elevated:hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .card-bordered {
+    border: 1px solid var(--border-default);
+    box-shadow: none;
+  }
+
+  .card-pad-none {
+    padding: 0;
+  }
+
+  .card-pad-sm {
+    padding: var(--spacing-3);
+  }
+
+  .card-pad-md {
+    padding: var(--spacing-6);
+  }
+
+  .card-pad-lg {
+    padding: var(--spacing-8);
+  }
+</style>

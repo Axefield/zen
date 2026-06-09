@@ -1,0 +1,192 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro"
+
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000"
+const query = Astro.url.searchParams.get("q") || ""
+
+interface SearchHit {
+  id: string
+  collection: string
+  title: string
+  slug: string
+  text: string
+}
+
+interface SearchResult {
+  collection: string
+  hits: SearchHit[]
+  total: number
+}
+
+let results: SearchResult[] = []
+let error = ""
+
+if (query.trim()) {
+  try {
+    const res = await fetch(`${API_URL}/api/search/query?q=${encodeURIComponent(query)}`)
+    const data = await res.json()
+    results = data.results || []
+  } catch {
+    error = "Search service unavailable."
+  }
+}
+
+function linkFor(collection: string, slug: string): string {
+  const routes: Record<string, string> = {
+    articles: "/articles",
+    products: "/products",
+    courses: "/courses",
+    events: "/events",
+  }
+  return `${routes[collection] || "/"}/${slug}`
+}
+---
+
+<BaseLayout title={query ? `Search: ${query}` : "Search"} description={`Search results for "${query}"`}>
+  <section class="search-page">
+    <h1>Search</h1>
+    <form method="GET" action="/search" class="search-form">
+      <input type="search" name="q" value={query} placeholder="Search articles, products, courses..." class="search-input" autofocus />
+      <button type="submit" class="search-btn">Search</button>
+    </form>
+
+    {error && <p class="error">{error}</p>}
+
+    {query.trim() && !error && (
+      <div class="results">
+        <p class="result-count">
+          {results.reduce((sum, r) => sum + r.total, 0)} result{results.reduce((sum, r) => sum + r.total, 0) !== 1 ? "s" : ""} for "{query}"
+        </p>
+
+        {results.length === 0 && <p class="no-results">No results found. Try a different search term.</p>}
+
+        {results.map((group) => (
+          <section class="result-group">
+            <h2 class="group-title">{group.collection.charAt(0).toUpperCase() + group.collection.slice(1)} ({group.total})</h2>
+            <div class="group-list">
+              {group.hits.map((hit) => (
+                <a href={linkFor(hit.collection, hit.slug)} class="hit">
+                  <h3>{hit.title}</h3>
+                  <p>{hit.text}</p>
+                </a>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .search-page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--spacing-12) var(--spacing-6);
+  }
+
+  h1 {
+    font-size: var(--text-heading-1);
+    margin: 0 0 var(--spacing-6);
+  }
+
+  .search-form {
+    display: flex;
+    gap: var(--spacing-3);
+    margin-bottom: var(--spacing-8);
+  }
+
+  .search-input {
+    flex: 1;
+    padding: var(--spacing-3) var(--spacing-4);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    font-size: var(--text-body);
+    font-family: inherit;
+    background: var(--bg-card);
+    color: var(--text-primary);
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px var(--color-primary-100);
+  }
+
+  .search-btn {
+    padding: var(--spacing-3) var(--spacing-6);
+    background: var(--color-primary-500);
+    color: var(--text-inverse);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--text-body);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+  }
+
+  .search-btn:hover {
+    background: var(--color-primary-600);
+  }
+
+  .error {
+    color: var(--color-danger-500);
+    font-style: italic;
+  }
+
+  .result-count {
+    color: var(--text-muted);
+    font-size: var(--text-small);
+    margin-bottom: var(--spacing-6);
+  }
+
+  .no-results {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .result-group {
+    margin-bottom: var(--spacing-8);
+  }
+
+  .group-title {
+    font-size: var(--text-heading-3);
+    margin: 0 0 var(--spacing-3);
+    color: var(--text-secondary);
+  }
+
+  .group-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+  }
+
+  .hit {
+    display: block;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-4) var(--spacing-6);
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+  }
+
+  .hit:hover {
+    border-color: var(--color-primary-300);
+    box-shadow: var(--shadow-md);
+    text-decoration: none;
+  }
+
+  .hit h3 {
+    margin: 0 0 var(--spacing-1);
+    font-size: var(--text-heading-3);
+  }
+
+  .hit p {
+    margin: 0;
+    font-size: var(--text-small);
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+</style>

@@ -2,6 +2,7 @@
   "name": "truligon",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.9.8",
   "type": "module",
   "workspaces": [
     "packages/*",
@@ -11,7 +12,12 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "echo 'lint: not configured yet'",
-    "test": "echo 'test: not configured yet'"
+    "test": "echo 'test: not configured yet'",
+    "dev": "turbo run dev",
+    "build": "turbo run build"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0"
   },
   "overrides": {
     "esbuild": "0.25.12"

@@ -12,6 +12,9 @@ build/
 .out/
 .next/
 
+# Turbo
+.turbo/
+
 # Astro
 .astro/
 

@@ -4,7 +4,17 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./tokens.css": "./src/tokens.css",
+    "./Button": "./src/components/Button.astro",
+    "./Card": "./src/components/Card.astro",
+    "./Input": "./src/components/Input.astro",
+    "./Badge": "./src/components/Badge.astro",
+    "./Select": "./src/components/Select.astro"
+  },
+  "scripts": {
+    "build": "echo 'no build needed'",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@truligon/types": "^0.1.0"
