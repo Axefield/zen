@@ -1,0 +1,31 @@
+{
+  "collectionName": "components_shared_testimonial_cards",
+  "info": {
+    "displayName": "Testimonial Card",
+    "icon": "quote",
+    "description": "Customer testimonial with quote, attribution, and avatar"
+  },
+  "options": {},
+  "attributes": {
+    "quote": {
+      "type": "text",
+      "required": true
+    },
+    "author": {
+      "type": "string",
+      "required": true
+    },
+    "role": {
+      "type": "string"
+    },
+    "company": {
+      "type": "string"
+    },
+    "avatar": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    }
+  }
+}

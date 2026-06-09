@@ -1,0 +1,60 @@
+---
+const navigation = [
+  { label: "Home", href: "/" },
+  { label: "Articles", href: "/articles" },
+  { label: "Products", href: "/products" },
+  { label: "Courses", href: "/courses" },
+  { label: "Events", href: "/events" },
+]
+---
+
+<header class="site-header">
+  <div class="container">
+    <a href="/" class="logo">Truligon</a>
+    <nav aria-label="Main navigation">
+      {navigation.map((item) => (
+        <a href={item.href}>{item.label}</a>
+      ))}
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    background: var(--color-primary-500);
+    color: var(--text-inverse);
+    padding: var(--spacing-4) var(--spacing-6);
+  }
+
+  .container {
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-size: var(--text-heading-3);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-inverse);
+    text-decoration: none;
+  }
+
+  nav {
+    display: flex;
+    gap: var(--spacing-6);
+  }
+
+  nav a {
+    color: var(--color-primary-100);
+    font-size: var(--text-small);
+    font-weight: var(--font-weight-medium);
+    transition: color var(--transition-fast);
+  }
+
+  nav a:hover {
+    color: var(--text-inverse);
+    text-decoration: none;
+  }
+</style>

@@ -1,0 +1,22 @@
+{
+  "collectionName": "components_shared_media_galleries",
+  "info": {
+    "displayName": "Media Gallery",
+    "icon": "picture",
+    "description": "Ordered media gallery with captions"
+  },
+  "options": {},
+  "attributes": {
+    "media": {
+      "type": "media",
+      "multiple": true,
+      "required": true,
+      "allowedTypes": ["images", "videos"]
+    },
+    "layout": {
+      "type": "enumeration",
+      "enum": ["grid", "carousel", "masonry", "single"],
+      "default": "grid"
+    }
+  }
+}

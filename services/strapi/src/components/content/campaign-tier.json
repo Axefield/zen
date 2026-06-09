@@ -1,0 +1,28 @@
+{
+  "collectionName": "components_content_campaign_tiers",
+  "info": {
+    "displayName": "Campaign Tier",
+    "icon": "layer",
+    "description": "Reward tier for fundraising campaigns"
+  },
+  "options": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text",
+      "required": true
+    },
+    "amount": {
+      "type": "decimal",
+      "required": true,
+      "min": 0
+    },
+    "maxBackers": {
+      "type": "integer",
+      "min": 1
+    }
+  }
+}

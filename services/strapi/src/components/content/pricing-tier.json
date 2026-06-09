@@ -1,0 +1,40 @@
+{
+  "collectionName": "components_content_pricing_tiers",
+  "info": {
+    "displayName": "Pricing Tier",
+    "icon": "price",
+    "description": "Pricing tier with features for pricing tables"
+  },
+  "options": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "price": {
+      "type": "decimal",
+      "required": true,
+      "min": 0
+    },
+    "interval": {
+      "type": "enumeration",
+      "enum": ["monthly", "yearly", "one-time"],
+      "default": "monthly"
+    },
+    "features": {
+      "type": "json"
+    },
+    "highlighted": {
+      "type": "boolean",
+      "default": false
+    },
+    "cta": {
+      "type": "component",
+      "repeatable": false,
+      "component": "shared.call-to-action"
+    }
+  }
+}

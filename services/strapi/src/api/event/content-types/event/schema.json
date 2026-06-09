@@ -1,0 +1,64 @@
+{
+  "kind": "collectionType",
+  "collectionName": "events",
+  "info": {
+    "singularName": "event",
+    "pluralName": "events",
+    "displayName": "Event",
+    "description": "Calendar events with registration and ticketing"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "title",
+      "required": true
+    },
+    "description": {
+      "type": "richtext",
+      "required": true
+    },
+    "date": {
+      "type": "datetime",
+      "required": true
+    },
+    "locationType": {
+      "type": "enumeration",
+      "enum": ["physical", "virtual", "hybrid"],
+      "default": "virtual"
+    },
+    "address": {
+      "type": "text"
+    },
+    "virtualUrl": {
+      "type": "string"
+    },
+    "capacity": {
+      "type": "integer",
+      "min": 1
+    },
+    "ticketTiers": {
+      "type": "component",
+      "repeatable": true,
+      "component": "content.ticket-tier"
+    },
+    "featuredImage": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "seo": {
+      "type": "component",
+      "repeatable": false,
+      "component": "seo.seo"
+    }
+  }
+}

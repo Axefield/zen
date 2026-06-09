@@ -1,0 +1,149 @@
+services:
+  zen-astro-web:
+    build:
+      context: .
+      dockerfile: apps/zen-astro-web/Dockerfile
+    command: npm run dev -- --host 0.0.0.0
+    environment:
+      NODE_ENV: development
+      PUBLIC_API_URL: http://localhost:4000
+      PUBLIC_STRAPI_URL: http://strapi:1337
+    ports:
+      - "3000:4321"
+    volumes:
+      - .:/app
+      - zen_astro_web_node_modules:/app/node_modules
+    depends_on:
+      ai-engine:
+        condition: service_started
+      strapi:
+        condition: service_started
+
+  zen-astro-dashboard:
+    build:
+      context: .
+      dockerfile: apps/zen-astro-dashboard/Dockerfile
+    command: npm run dev -- --host 0.0.0.0
+    environment:
+      NODE_ENV: development
+      PUBLIC_API_URL: http://ai-engine:4000
+      PUBLIC_STRAPI_URL: http://strapi:1337
+    ports:
+      - "3001:4321"
+    volumes:
+      - .:/app
+      - zen_astro_dashboard_node_modules:/app/node_modules
+    depends_on:
+      ai-engine:
+        condition: service_started
+      strapi:
+        condition: service_started
+
+  ai-engine:
+    build:
+      context: ./services/ai-engine
+    command: npm run dev
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      DATABASE_URL: postgres://truligon:truligon@postgres:5432/truligon
+      REDIS_URL: redis://redis:6379
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_API_KEY: ${MEILI_MASTER_KEY:-local_master_key}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./services/ai-engine:/app
+      - ai_engine_node_modules:/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+
+  strapi:
+    build:
+      context: ./services/strapi
+    command: npm run develop
+    environment:
+      NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: 1337
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: truligon
+      DATABASE_USERNAME: truligon
+      DATABASE_PASSWORD: truligon
+      DATABASE_SSL: "false"
+      APP_KEYS: ${STRAPI_APP_KEYS:-localKeyA,localKeyB}
+      API_TOKEN_SALT: ${STRAPI_API_TOKEN_SALT:-localApiTokenSalt}
+      ADMIN_JWT_SECRET: ${STRAPI_ADMIN_JWT_SECRET:-localAdminJwtSecret}
+      ADMIN_ENCRYPTION_KEY: ${STRAPI_ADMIN_ENCRYPTION_KEY:-localAdminEncryptionKey}
+      TRANSFER_TOKEN_SALT: ${STRAPI_TRANSFER_TOKEN_SALT:-localTransferTokenSalt}
+      JWT_SECRET: ${STRAPI_JWT_SECRET:-localJwtSecret}
+    ports:
+      - "1337:1337"
+    volumes:
+      - ./services/strapi:/app
+      - strapi_node_modules:/app/node_modules
+      - strapi_uploads:/app/public/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: truligon
+      POSTGRES_USER: truligon
+      POSTGRES_PASSWORD: truligon
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U truligon -d truligon"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.13
+    environment:
+      MEILI_ENV: development
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-local_master_key}
+    ports:
+      - "7700:7700"
+    volumes:
+      - meili_data:/meili_data
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:7700/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  ai_engine_node_modules:
+  zen_astro_web_node_modules:
+  zen_astro_dashboard_node_modules:
+  strapi_node_modules:
+  strapi_uploads:
+  postgres_data:
+  redis_data:
+  meili_data:

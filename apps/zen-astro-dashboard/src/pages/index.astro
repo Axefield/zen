@@ -1,0 +1,135 @@
+---
+import DashboardLayout from "../layouts/DashboardLayout.astro"
+import { fetchDashboardMetrics } from "../lib/api"
+
+const metrics = await fetchDashboardMetrics()
+---
+
+<DashboardLayout title="Overview">
+  <h1>Dashboard</h1>
+  <p class="subtitle">System health, content inventory, and operational signals.</p>
+
+  <div class="metrics-grid">
+    <article class="metric-card">
+      <span class="label">API Status</span>
+      <strong class={metrics.apiStatus === "ok" ? "ok" : "error"}>{metrics.apiStatus}</strong>
+    </article>
+
+    <article class="metric-card">
+      <span class="label">Total Content Items</span>
+      <strong>{metrics.totalContent}</strong>
+    </article>
+
+    <article class="metric-card">
+      <span class="label">Active Modules</span>
+      <strong>{metrics.apiModules.length || "—"}</strong>
+    </article>
+
+    <article class="metric-card">
+      <span class="label">API Modules</span>
+      <span class="tags">
+        {metrics.apiModules.length > 0
+          ? metrics.apiModules.map((m) => `<span class="tag">${m}</span>`).join(" ")
+          : "—"
+        }
+      </span>
+    </article>
+  </div>
+
+  <section class="content-breakdown">
+    <h2>Content by Type</h2>
+    <div class="breakdown-grid">
+      <div class="stat"><span>Pages</span><strong>{metrics.contentBreakdown.pages}</strong></div>
+      <div class="stat"><span>Articles</span><strong>{metrics.contentBreakdown.articles}</strong></div>
+      <div class="stat"><span>Products</span><strong>{metrics.contentBreakdown.products}</strong></div>
+      <div class="stat"><span>Courses</span><strong>{metrics.contentBreakdown.courses}</strong></div>
+      <div class="stat"><span>Events</span><strong>{metrics.contentBreakdown.events}</strong></div>
+    </div>
+  </section>
+</DashboardLayout>
+
+<style>
+  h1 {
+    font-size: var(--text-heading-1);
+    margin: 0 0 var(--spacing-2);
+  }
+
+  .subtitle {
+    color: var(--text-secondary);
+    margin: 0 0 var(--spacing-8);
+    font-size: var(--text-body);
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-8);
+  }
+
+  .metric-card {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    padding: var(--spacing-5);
+  }
+
+  .label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: var(--text-small);
+    margin-bottom: var(--spacing-2);
+  }
+
+  .metric-card strong {
+    display: block;
+    font-size: var(--text-heading-2);
+  }
+
+  .metric-card .ok { color: var(--color-success); }
+  .metric-card .error { color: var(--color-error); }
+
+  .tags {
+    font-size: var(--text-small);
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    background: var(--color-primary-100);
+    color: var(--color-primary-500);
+    font-size: var(--text-caption);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .content-breakdown h2 {
+    font-size: var(--text-heading-3);
+    margin: 0 0 var(--spacing-4);
+  }
+
+  .breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--spacing-3);
+  }
+
+  .stat {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    padding: var(--spacing-4);
+    text-align: center;
+  }
+
+  .stat span {
+    display: block;
+    font-size: var(--text-small);
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-2);
+  }
+
+  .stat strong {
+    font-size: var(--text-heading-2);
+  }
+</style>

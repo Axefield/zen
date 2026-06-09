@@ -1,0 +1,21 @@
+{
+  "collectionName": "components_shared_rich_text_blocks",
+  "info": {
+    "displayName": "Rich Text Block",
+    "icon": "file",
+    "description": "Rich text content block with embedded media"
+  },
+  "options": {},
+  "attributes": {
+    "body": {
+      "type": "richtext",
+      "required": true
+    },
+    "media": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
+      "allowedTypes": ["images", "videos", "files"]
+    }
+  }
+}

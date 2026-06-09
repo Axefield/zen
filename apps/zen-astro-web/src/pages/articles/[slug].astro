@@ -1,0 +1,94 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro"
+import { fetchCollection } from "../../lib/strapi"
+
+const { slug } = Astro.params
+
+interface StrapiArticle {
+  id: number
+  title: string
+  slug: string
+  excerpt: string
+  body: string
+  publishedAt: string
+}
+
+let article: StrapiArticle | null = null
+try {
+  const articles = await fetchCollection<StrapiArticle>("articles", { "filters[slug][$eq]": slug })
+  article = articles.length > 0 ? articles[0] : null
+} catch {}
+
+if (!article) {
+  return Astro.redirect("/articles", 307)
+}
+---
+
+<BaseLayout title={article.title} description={article.excerpt}>
+  <article class="article">
+    <header>
+      <p class="breadcrumb"><a href="/articles">Articles</a> /</p>
+      <h1>{article.title}</h1>
+      <time datetime={article.publishedAt}>
+        {new Date(article.publishedAt).toLocaleDateString("en-US", {
+          year: "numeric", month: "long", day: "numeric"
+        })}
+      </time>
+    </header>
+    <div class="body">
+      {article.body}
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .article {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--spacing-12) var(--spacing-6);
+  }
+
+  header {
+    margin-bottom: var(--spacing-8);
+  }
+
+  .breadcrumb {
+    font-size: var(--text-small);
+    color: var(--text-muted);
+    margin: 0 0 var(--spacing-3);
+  }
+
+  .breadcrumb a {
+    color: var(--color-primary-500);
+  }
+
+  h1 {
+    font-size: var(--text-heading-1);
+    margin: 0 0 var(--spacing-4);
+  }
+
+  time {
+    color: var(--text-muted);
+    font-size: var(--text-small);
+  }
+
+  .body {
+    font-size: var(--text-body);
+    line-height: var(--line-height-relaxed);
+    color: var(--text-primary);
+  }
+
+  .body :global(p) {
+    margin: 0 0 var(--spacing-4);
+  }
+
+  .body :global(h2) {
+    margin: var(--spacing-8) 0 var(--spacing-3);
+    font-size: var(--text-heading-2);
+  }
+
+  .body :global(h3) {
+    margin: var(--spacing-6) 0 var(--spacing-2);
+    font-size: var(--text-heading-3);
+  }
+</style>

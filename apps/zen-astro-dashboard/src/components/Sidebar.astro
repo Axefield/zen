@@ -1,0 +1,76 @@
+---
+const navigation = [
+  { label: "Overview", href: "/", icon: "grid" },
+  { label: "Analytics", href: "/analytics", icon: "chart" },
+  { label: "Content", href: "/content", icon: "file" },
+  { label: "Experiments", href: "/experiments", icon: "beaker" },
+  { label: "Settings", href: "/settings", icon: "gear" },
+]
+---
+
+<aside class="sidebar">
+  <div class="brand">Truligon</div>
+  <nav aria-label="Dashboard navigation">
+    {navigation.map((item) => (
+      <a href={item.href} class={Astro.url.pathname === item.href ? "active" : ""}>
+        <span class="icon" aria-hidden="true">{item.icon === "grid" ? "▦" : item.icon === "chart" ? "📊" : item.icon === "file" ? "📄" : item.icon === "beaker" ? "🔬" : "⚙"}</span>
+        {item.label}
+      </a>
+    ))}
+  </nav>
+</aside>
+
+<style>
+  .sidebar {
+    width: var(--sidebar-width);
+    background: var(--color-primary-700);
+    color: var(--color-primary-100);
+    padding: var(--spacing-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+    min-height: 100vh;
+  }
+
+  .brand {
+    font-size: var(--text-heading-3);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-inverse);
+  }
+
+  nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+  }
+
+  nav a {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-md);
+    color: var(--color-primary-200);
+    font-size: var(--text-small);
+    font-weight: var(--font-weight-medium);
+    text-decoration: none;
+    transition: background var(--transition-fast), color var(--transition-fast);
+  }
+
+  nav a:hover {
+    background: var(--color-primary-600);
+    color: var(--text-inverse);
+    text-decoration: none;
+  }
+
+  nav a.active {
+    background: var(--color-primary-500);
+    color: var(--text-inverse);
+  }
+
+  .icon {
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+  }
+</style>

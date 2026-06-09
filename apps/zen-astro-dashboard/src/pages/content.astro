@@ -1,0 +1,16 @@
+---
+import DashboardLayout from "../layouts/DashboardLayout.astro"
+---
+
+<DashboardLayout title="Content">
+  <h1>Content</h1>
+  <p class="subtitle">Manage pages, articles, products, courses, and events.</p>
+  <p class="placeholder">Content management views. Manage content via the <a href="http://localhost:1337/admin" target="_blank">Strapi admin panel</a>.</p>
+</DashboardLayout>
+
+<style>
+  h1 { font-size: var(--text-heading-1); margin: 0 0 var(--spacing-2); }
+  .subtitle { color: var(--text-secondary); margin: 0 0 var(--spacing-8); }
+  .placeholder { color: var(--text-muted); font-style: italic; }
+  .placeholder a { color: var(--color-primary-500); }
+</style>

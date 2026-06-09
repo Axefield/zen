@@ -1,0 +1,107 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro"
+import { fetchCollection } from "../../lib/strapi"
+
+interface StrapiArticle {
+  id: number
+  title: string
+  slug: string
+  excerpt: string
+  publishedAt: string
+}
+
+let articles: StrapiArticle[] = []
+try {
+  articles = await fetchCollection<StrapiArticle>("articles", { "sort": "publishedAt:desc", "pagination[limit]": "50" })
+} catch {}
+---
+
+<BaseLayout title="Articles" description="Latest articles and updates.">
+  <section class="page-header">
+    <h1>Articles</h1>
+  </section>
+
+  <section class="list">
+    {articles.length > 0 ? (
+      <div class="grid">
+        {articles.map((article) => (
+          <a href={`/articles/${article.slug}`} class="card">
+            <h2>{article.title}</h2>
+            <p>{article.excerpt}</p>
+            <time datetime={article.publishedAt}>
+              {new Date(article.publishedAt).toLocaleDateString()}
+            </time>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <p class="empty">No articles published yet.</p>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .page-header {
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+    padding: var(--spacing-12) var(--spacing-6) var(--spacing-8);
+  }
+
+  .page-header h1 {
+    font-size: var(--text-heading-1);
+    margin: 0;
+  }
+
+  .list {
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+    padding: 0 var(--spacing-6) var(--spacing-12);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--spacing-4);
+  }
+
+  .card {
+    display: block;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    padding: var(--spacing-6);
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+  }
+
+  .card:hover {
+    border-color: var(--color-primary-300);
+    box-shadow: var(--shadow-md);
+    text-decoration: none;
+  }
+
+  .card h2 {
+    margin: 0 0 var(--spacing-2);
+    font-size: var(--text-heading-3);
+  }
+
+  .card p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: var(--text-small);
+    line-height: var(--line-height-normal);
+  }
+
+  .card time {
+    display: block;
+    margin-top: var(--spacing-3);
+    color: var(--text-muted);
+    font-size: var(--text-caption);
+  }
+
+  .empty {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+</style>

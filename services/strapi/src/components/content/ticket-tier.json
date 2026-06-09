@@ -1,0 +1,28 @@
+{
+  "collectionName": "components_content_ticket_tiers",
+  "info": {
+    "displayName": "Ticket Tier",
+    "icon": "ticket",
+    "description": "Ticket pricing tier for events"
+  },
+  "options": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text",
+      "required": true
+    },
+    "price": {
+      "type": "decimal",
+      "required": true,
+      "min": 0
+    },
+    "capacity": {
+      "type": "integer",
+      "min": 1
+    }
+  }
+}

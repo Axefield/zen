@@ -1,0 +1,28 @@
+{
+  "collectionName": "components_content_lessons",
+  "info": {
+    "displayName": "Lesson",
+    "icon": "play",
+    "description": "A single lesson within a course module"
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "videoUrl": {
+      "type": "string"
+    },
+    "duration": {
+      "type": "integer",
+      "min": 0
+    },
+    "content": {
+      "type": "richtext"
+    }
+  }
+}

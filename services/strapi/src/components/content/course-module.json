@@ -1,0 +1,23 @@
+{
+  "collectionName": "components_content_course_modules",
+  "info": {
+    "displayName": "Course Module",
+    "icon": "stack",
+    "description": "A module within a course containing lessons"
+  },
+  "options": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "lessons": {
+      "type": "component",
+      "repeatable": true,
+      "component": "content.lesson"
+    }
+  }
+}

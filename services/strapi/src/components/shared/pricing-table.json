@@ -1,0 +1,21 @@
+{
+  "collectionName": "components_shared_pricing_tables",
+  "info": {
+    "displayName": "Pricing Table",
+    "icon": "price",
+    "description": "Tiered pricing table with feature lists"
+  },
+  "options": {},
+  "attributes": {
+    "headline": {
+      "type": "string"
+    },
+    "tiers": {
+      "type": "component",
+      "repeatable": true,
+      "min": 1,
+      "max": 6,
+      "component": "content.pricing-tier"
+    }
+  }
+}
