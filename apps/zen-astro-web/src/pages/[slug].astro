@@ -1,0 +1,47 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro"
+import { fetchCollection } from "../lib/strapi"
+
+const { slug } = Astro.params
+
+interface StrapiPage {
+  id: number
+  title: string
+  slug: string
+  content?: unknown[]
+  createdAt: string
+  publishedAt: string
+}
+
+let page: StrapiPage | null = null
+try {
+  const pages = await fetchCollection<StrapiPage>("pages", {
+    "filters[slug][$eq]": slug,
+    "filters[visibility][$eq]": "public"
+  })
+  page = pages.length > 0 ? pages[0] : null
+} catch {}
+
+if (!page) {
+  return Astro.redirect("/", 307)
+}
+---
+
+<BaseLayout title={page.title}>
+  <article class="page">
+    <h1>{page.title}</h1>
+  </article>
+</BaseLayout>
+
+<style>
+  .page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--spacing-12) var(--spacing-6);
+  }
+
+  h1 {
+    font-size: var(--text-heading-1);
+    margin: 0;
+  }
+</style>

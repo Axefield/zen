@@ -1,0 +1,217 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro"
+import { fetchCollection } from "../../lib/strapi"
+
+const { slug } = Astro.params
+
+interface StrapiTicketTier {
+  id: number
+  name: string
+  price: number
+  currency?: string
+  description?: string
+}
+
+interface StrapiEvent {
+  id: number
+  title: string
+  slug: string
+  description: string
+  date: string
+  locationType: "physical" | "virtual" | "hybrid"
+  address?: string
+  virtualUrl?: string
+  capacity?: number
+  ticketTiers?: StrapiTicketTier[]
+  createdAt: string
+  publishedAt: string
+}
+
+let event: StrapiEvent | null = null
+try {
+  const events = await fetchCollection<StrapiEvent>("events", {
+    "filters[slug][$eq]": slug,
+    "populate[ticketTiers]": "true"
+  })
+  event = events.length > 0 ? events[0] : null
+} catch {}
+
+if (!event) {
+  return Astro.redirect("/events", 307)
+}
+
+const locationLabel = event.locationType === "physical" ? "In Person" : event.locationType === "virtual" ? "Online" : "Hybrid"
+const eventDate = new Date(event.date)
+const isPast = eventDate < new Date()
+---
+
+<BaseLayout title={event.title} description={event.description}>
+  <article class="event">
+    <header>
+      <p class="breadcrumb"><a href="/events">Events</a> /</p>
+      <h1>{event.title}</h1>
+      <div class="event-meta">
+        <time datetime={event.date} class={isPast ? "past" : ""}>
+          {eventDate.toLocaleDateString("en-US", {
+            weekday: "long", year: "numeric", month: "long", day: "numeric"
+          })}
+        </time>
+        <span class="badge">{locationLabel}</span>
+      </div>
+      {event.locationType === "physical" && event.address && (
+        <p class="address">{event.address}</p>
+      )}
+      {event.locationType !== "physical" && event.virtualUrl && (
+        <p class="virtual"><a href={event.virtualUrl} target="_blank">Join Online</a></p>
+      )}
+      {event.capacity && (
+        <p class="capacity">Capacity: {event.capacity}</p>
+      )}
+    </header>
+    <div class="body">
+      {event.description}
+    </div>
+    {event.ticketTiers && event.ticketTiers.length > 0 && (
+      <section class="tickets">
+        <h2>Tickets</h2>
+        <div class="ticket-list">
+          {event.ticketTiers.map((tier) => (
+            <div class="tier">
+              <div>
+                <h3>{tier.name}</h3>
+                {tier.description && <p>{tier.description}</p>}
+              </div>
+              <span class="tier-price">
+                {new Intl.NumberFormat("en-US", {
+                  style: "currency", currency: tier.currency || "USD"
+                }).format(tier.price)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
+  </article>
+</BaseLayout>
+
+<style>
+  .event {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--spacing-12) var(--spacing-6);
+  }
+
+  header {
+    margin-bottom: var(--spacing-8);
+  }
+
+  .breadcrumb {
+    font-size: var(--text-small);
+    color: var(--text-muted);
+    margin: 0 0 var(--spacing-3);
+  }
+
+  .breadcrumb a {
+    color: var(--color-primary-500);
+  }
+
+  h1 {
+    font-size: var(--text-heading-1);
+    margin: 0 0 var(--spacing-4);
+  }
+
+  .event-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    margin-bottom: var(--spacing-2);
+  }
+
+  .event-meta time {
+    font-size: var(--text-body);
+    color: var(--text-secondary);
+  }
+
+  .event-meta .past {
+    opacity: 0.6;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px var(--spacing-2);
+    border-radius: var(--radius-sm);
+    background: var(--color-primary-100);
+    color: var(--color-primary-700);
+    font-size: var(--text-caption);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .address, .virtual, .capacity {
+    margin: var(--spacing-1) 0;
+    font-size: var(--text-small);
+    color: var(--text-secondary);
+  }
+
+  .body {
+    font-size: var(--text-body);
+    line-height: var(--line-height-relaxed);
+    color: var(--text-primary);
+  }
+
+  .body :global(p) {
+    margin: 0 0 var(--spacing-4);
+  }
+
+  .body :global(h2) {
+    margin: var(--spacing-8) 0 var(--spacing-3);
+    font-size: var(--text-heading-2);
+  }
+
+  .body :global(h3) {
+    margin: var(--spacing-6) 0 var(--spacing-2);
+    font-size: var(--text-heading-3);
+  }
+
+  .tickets {
+    margin-top: var(--spacing-10);
+    border-top: 1px solid var(--border-light);
+    padding-top: var(--spacing-8);
+  }
+
+  .tickets h2 {
+    font-size: var(--text-heading-2);
+    margin: 0 0 var(--spacing-6);
+  }
+
+  .ticket-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+  }
+
+  .tier {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-4) var(--spacing-6);
+  }
+
+  .tier h3 {
+    font-size: var(--text-heading-3);
+    margin: 0 0 var(--spacing-1);
+  }
+
+  .tier p {
+    margin: 0;
+    font-size: var(--text-small);
+    color: var(--text-secondary);
+  }
+
+  .tier-price {
+    font-size: var(--text-heading-3);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary-500);
+  }
+</style>

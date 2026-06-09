@@ -104,21 +104,27 @@ All 7 Docker services run. Module directories exist. `.gitignore`, `.env.example
 - 13 reusable components across 3 categories (seo, shared, content)
 - All 10 CRUD API endpoints working
 - Strapi auto-generated TypeScript types (1417 lines)
-- Bootstrap seed data (3 categories + 3 articles)
+- Bootstrap seed data (3 categories + 3 articles + 3 products + 2 courses + 2 events)
 - Bootstrap lifecycle hook in `services/strapi/src/index.js`
+- Seed-new script `scripts/seed-new.mjs` — full reseed via admin JWT -> API token -> content API
 
 **Not done:** Meilisearch sync, webhooks to ai-engine, role-based access, review workflows.
 
-### Phase 3 — Frontend Foundation (40% Complete)
+### Phase 3 — Frontend Foundation (80% Complete)
 
 **zen-astro-web:**
 - ✅ Base layout (Header + Footer + SEO meta)
 - ✅ Homepage — fetches articles from Strapi, lists in card grid
 - ✅ Articles listing (`/articles`) — Strapi-powered index page
 - ✅ Article detail (`/articles/[slug]`) — renders title, date, body
+- ✅ Products listing (`/products`) — card grid with name + price + compare-at price
+- ✅ Product detail (`/products/[slug]`) — name, price, rich description
+- ✅ Courses listing (`/courses`) — card grid with title + price
+- ✅ Course detail (`/courses/[slug]`) — title, price, modules/lessons, rich description
+- ✅ Events listing (`/events`) — card grid with title + date + location badge
+- ✅ Event detail (`/events/[slug]`) — date, location, capacity, ticket tiers, rich description
+- ✅ Dynamic page (`/[slug]`) — fetches public pages by slug (redirects to `/` if not found)
 - ✅ Strapi data fetching library (`src/lib/strapi.ts`)
-- ❌ No `/[slug]` dynamic page route
-- ❌ No Product/Course/Event frontend routes
 - ❌ No client-side interactivity (Islands)
 
 **zen-astro-dashboard:**
@@ -335,9 +341,10 @@ docker compose logs --tail=50 <service_name>
 
 | File | Purpose |
 |------|---------|
-| `src/index.js` | Bootstrap lifecycle hook (auto-seeds content) |
-| `scripts/bootstrap.mjs` | CLI-based seed script (uses API token) |
-| `scripts/create-token.sh` | Helper to create admin API token |
+| `src/index.js` | Bootstrap lifecycle hook (auto-seeds content on first start) |
+| `scripts/bootstrap.mjs` | CLI-based seed script (for re-seeding, uses API token env) |
+| `scripts/seed-new.mjs` | Full seed script — creates an API token from admin JWT then seeds all content |
+| `scripts/create-token.sh` | Shell helper to create admin API token via admin API |
 | `config/admin.js` | Admin panel configuration |
 | `config/server.js` | Server configuration |
 | `config/database.js` | PostgreSQL connection config |
@@ -359,7 +366,7 @@ docker compose logs --tail=50 <service_name>
 
 **Symptom:** Admin user JWT returns 401 when POSTing to `/api/*` endpoints.
 
-**Fix:** Use an Admin API Token (created via `/admin/api-tokens` in Strapi admin) instead of a user JWT. The token has full write permissions by default. Pass it as `Authorization: Bearer <token>`.
+**Fix:** Use an Admin API Token (created via the Strapi admin API or UI) instead of a user JWT. The token has full write permissions by default. Pass it as `Authorization: Bearer <token>`.
 
 ### Docker Volume Stale node_modules
 
@@ -434,11 +441,89 @@ docker compose up -d --build zen-astro-web
 ## Strapi Admin
 
 - **URL:** http://localhost:1337/admin
-- **First-time setup:** Create admin account via UI or CLI
-- **API tokens:** Create via Settings → API Tokens → Create new API Token
-- **Content seeding:** Automatic on first Strapi start via `src/index.js` bootstrap
-- **Content API:** All endpoints at `http://localhost:1337/api/{pluralName}`
-- **Type generation:** Run `npx strapi content-types:generate-types` after schema changes
+- **First-time setup:** Create admin account via UI (first visit) or CLI
+
+### Admin Account Management
+
+The initial admin password is set during first-time UI setup. If it's unknown, create a **new admin user** via CLI (login credentials unknown):
+
+```powershell
+docker compose exec strapi npx strapi admin:create-user --email=ops@truligon.io --password=<new_password> --firstname=Ops --lastname=User
+```
+
+> **Note:** The bootstrap hook in `src/index.js` previously broke CLI commands because it queried `strapi::core_store` at load time (the table doesn't exist during CLI execution). The query is now wrapped in try/catch to handle this gracefully.
+
+### API Token Creation (for Content Seeding)
+
+Admin user JWTs do NOT grant write access to the Content API (`/api/*`). You must create a **full-access API token**:
+
+```powershell
+# 1. Login with an admin user to get a JWT
+$JWT = docker compose exec -T strapi node -e "
+async function main() {
+  const res = await fetch('http://localhost:1337/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'ops@truligon.io', password: '<password>' })
+  });
+  const data = await res.json();
+  process.stdout.write(data.data?.token || 'FAILED');
+}
+main().catch(console.error);
+"
+
+# 2. Create a full-access API token using the admin JWT
+$TOKEN = docker compose exec -T -e STRAPI_ADMIN_JWT=$JWT strapi node -e "
+const STRAPI_URL = 'http://localhost:1337';
+async function main() {
+  const res = await fetch(STRAPI_URL + '/admin/api-tokens', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + process.env.STRAPI_ADMIN_JWT },
+    body: JSON.stringify({ name: 'Seed Token', description: 'For content seeding', type: 'full-access' })
+  });
+  const data = await res.json();
+  process.stdout.write(data.data?.accessKey || 'FAILED: ' + JSON.stringify(data));
+}
+main().catch(console.error);
+"
+
+# 3. Use the token for content API calls
+docker compose exec -T -e STRAPI_API_TOKEN=$TOKEN strapi node scripts/seed-new.mjs
+```
+
+> **Important:** The `accessKey` returned by the token creation API is the **only time you see the full key**. It's encrypted before storage (`encrypted_key` column in `strapi_api_tokens`). Grabbing `access_key` directly from PostgreSQL will NOT work — the key in the DB is a reference/prefix, not the usable token string.
+
+### API Tokens (Manual)
+
+- **UI:** Settings → API Tokens → Create new API Token
+- **Admin API:** `POST /admin/api-tokens` with JWT auth (see above)
+- **Type:** Use `full-access` for content seeding/scripting
+
+### Content Seeding
+
+- **Automatic:** On first Strapi start, `src/index.js` bootstrap creates categories, articles, products, courses, and events
+- **Manual re-seed:** Run `scripts/seed-new.mjs` with a valid API token
+  ```powershell
+  docker compose exec -T -e STRAPI_API_TOKEN=<token> strapi node scripts/seed-new.mjs
+  ```
+- **Reset:** Delete the `strapi::core_store` entry and restart:
+  ```sql
+  DELETE FROM strapi_core_store WHERE key = 'bootstrap_seeded';
+  ```
+
+### Content API
+
+- All endpoints at `http://localhost:1337/api/{pluralName}`
+- Query params: `filters[slug][$eq]=value`, `sort=field:asc`, `pagination[limit]=N`, `populate[relation]=true`
+- Requires `Authorization: Bearer <api_token>` for write operations
+
+### Type Generation
+
+After schema changes, regenerate Strapi TypeScript types:
+
+```powershell
+docker compose exec strapi npx strapi ts:generate-types
+```
 
 ---
 

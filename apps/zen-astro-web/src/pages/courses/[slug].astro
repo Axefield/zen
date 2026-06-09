@@ -1,0 +1,159 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro"
+import { fetchCollection } from "../../lib/strapi"
+
+const { slug } = Astro.params
+
+interface StrapiModule {
+  id: number
+  title: string
+  lessons?: { id: number; title: string }[]
+}
+
+interface StrapiCourse {
+  id: number
+  title: string
+  slug: string
+  description: string
+  price?: number
+  currency: string
+  modules?: StrapiModule[]
+  createdAt: string
+  publishedAt: string
+}
+
+let course: StrapiCourse | null = null
+try {
+  const courses = await fetchCollection<StrapiCourse>("courses", {
+    "filters[slug][$eq]": slug,
+    "populate[modules][populate][lessons]": "true"
+  })
+  course = courses.length > 0 ? courses[0] : null
+} catch {}
+
+if (!course) {
+  return Astro.redirect("/courses", 307)
+}
+---
+
+<BaseLayout title={course.title} description={course.description}>
+  <article class="course">
+    <header>
+      <p class="breadcrumb"><a href="/courses">Courses</a> /</p>
+      <h1>{course.title}</h1>
+      {course.price != null && course.price > 0 && (
+        <p class="price">
+          {new Intl.NumberFormat("en-US", { style: "currency", currency: course.currency }).format(course.price)}
+        </p>
+      )}
+    </header>
+    <div class="body">
+      {course.description}
+    </div>
+    {course.modules && course.modules.length > 0 && (
+      <section class="modules">
+        <h2>Course Modules</h2>
+        {course.modules.map((mod) => (
+          <div class="module">
+            <h3>{mod.title}</h3>
+            {mod.lessons && mod.lessons.length > 0 && (
+              <ul class="lessons">
+                {mod.lessons.map((lesson) => (
+                  <li>{lesson.title}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </section>
+    )}
+  </article>
+</BaseLayout>
+
+<style>
+  .course {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--spacing-12) var(--spacing-6);
+  }
+
+  header {
+    margin-bottom: var(--spacing-8);
+  }
+
+  .breadcrumb {
+    font-size: var(--text-small);
+    color: var(--text-muted);
+    margin: 0 0 var(--spacing-3);
+  }
+
+  .breadcrumb a {
+    color: var(--color-primary-500);
+  }
+
+  h1 {
+    font-size: var(--text-heading-1);
+    margin: 0 0 var(--spacing-4);
+  }
+
+  .price {
+    font-size: var(--text-heading-2);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary-500);
+    margin: 0;
+  }
+
+  .body {
+    font-size: var(--text-body);
+    line-height: var(--line-height-relaxed);
+    color: var(--text-primary);
+  }
+
+  .body :global(p) {
+    margin: 0 0 var(--spacing-4);
+  }
+
+  .body :global(h2) {
+    margin: var(--spacing-8) 0 var(--spacing-3);
+    font-size: var(--text-heading-2);
+  }
+
+  .body :global(h3) {
+    margin: var(--spacing-6) 0 var(--spacing-2);
+    font-size: var(--text-heading-3);
+  }
+
+  .modules {
+    margin-top: var(--spacing-10);
+    border-top: 1px solid var(--border-light);
+    padding-top: var(--spacing-8);
+  }
+
+  .modules h2 {
+    font-size: var(--text-heading-2);
+    margin: 0 0 var(--spacing-6);
+  }
+
+  .module {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-4) var(--spacing-6);
+    margin-bottom: var(--spacing-4);
+  }
+
+  .module h3 {
+    font-size: var(--text-heading-3);
+    margin: 0 0 var(--spacing-2);
+  }
+
+  .lessons {
+    margin: var(--spacing-2) 0 0;
+    padding-left: var(--spacing-5);
+    color: var(--text-secondary);
+    font-size: var(--text-small);
+  }
+
+  .lessons li {
+    margin-bottom: var(--spacing-1);
+  }
+</style>

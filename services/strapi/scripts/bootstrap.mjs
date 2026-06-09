@@ -72,6 +72,70 @@ async function main() {
     }
   }
 
+  // 5. Create seed products
+  const products = [
+    { name: "Zen Starter Kit", slug: "zen-starter-kit", description: "# Zen Starter Kit\n\nThe foundational toolkit for building on Truligon's Zen. Includes type-safe templates, Strapi content models, and AI integration stubs.", price: 99.99, currency: "USD" },
+    { name: "Enterprise License", slug: "enterprise-license", description: "# Enterprise License\n\nFull access to all modules, priority support, and custom integration assistance for your organization.", price: 999.99, compareAtPrice: 1499.99, currency: "USD" },
+    { name: "AI Agent Pack", slug: "ai-agent-pack", description: "# AI Agent Pack\n\nPre-built AI agent workflows for content generation, analytics, and customer engagement automation.", price: 299.99, currency: "USD" },
+  ];
+
+  for (const product of products) {
+    const { ok, status, data } = await api("/api/products", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: product }),
+    });
+    if (ok) {
+      console.log(`Product "${product.name}" created: ${data.data?.id}`);
+    } else if (status === 409) {
+      console.log(`Product "${product.name}" already exists`);
+    } else {
+      console.error(`Failed to create product "${product.name}" (${status}):`, JSON.stringify(data));
+    }
+  }
+
+  // 6. Create seed courses
+  const courses = [
+    { title: "Getting Started with Truligon's Zen", slug: "getting-started-with-zen", description: "# Course Overview\n\nLearn how to set up your first Truligon's Zen instance, configure modules, and deploy to production.", price: 0, currency: "USD" },
+    { title: "Advanced Type System Design", slug: "advanced-type-system", description: "# Advanced Type System\n\nDeep dive into designing reusable, type-safe entities with Zod validation across your entire stack.", price: 149.99, currency: "USD" },
+  ];
+
+  for (const course of courses) {
+    const { ok, status, data } = await api("/api/courses", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: course }),
+    });
+    if (ok) {
+      console.log(`Course "${course.title}" created: ${data.data?.id}`);
+    } else if (status === 409) {
+      console.log(`Course "${course.title}" already exists`);
+    } else {
+      console.error(`Failed to create course "${course.title}" (${status}):`, JSON.stringify(data));
+    }
+  }
+
+  // 7. Create seed events
+  const events = [
+    { title: "Zen Developer Summit 2026", slug: "zen-developer-summit-2026", description: "# Zen Developer Summit\n\nJoin us for a two-day summit covering modular architecture, AI integration patterns, and real-world case studies.", date: "2026-09-15T09:00:00Z", locationType: "hybrid", address: "123 Innovation Drive, San Francisco, CA", virtualUrl: "https://events.truligons.zen/summit-2026", capacity: 500 },
+    { title: "Monthly Community Call", slug: "monthly-community-call", description: "# Community Call\n\nMonthly sync with the Truligon's Zen community. Share what you're building, get help, and meet other developers.", date: "2026-07-01T16:00:00Z", locationType: "virtual", virtualUrl: "https://meet.truligons.zen/community", capacity: 100 },
+  ];
+
+  for (const event of events) {
+    const { ok, status, data } = await api("/api/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: event }),
+    });
+    if (ok) {
+      console.log(`Event "${event.title}" created: ${data.data?.id}`);
+    } else if (status === 409) {
+      console.log(`Event "${event.title}" already exists`);
+    } else {
+      console.error(`Failed to create event "${event.title}" (${status}):`, JSON.stringify(data));
+    }
+  }
+
   console.log("Bootstrap complete!");
 }
 

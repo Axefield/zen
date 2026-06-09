@@ -83,16 +83,125 @@ Copy-Item .env.example .env
 docker compose up --build
 ```
 
-### Verify
+### First-Time Setup
+
+Once all containers are running (may take a minute on first build):
+
+**1. Create the Strapi admin account**
+
+Navigate to `http://localhost:1337/admin` and create an admin account on first visit. Save these credentials.
+
+Alternatively, create via CLI (useful if the admin password is lost):
 
 ```powershell
-Invoke-RestMethod http://localhost:4000/health
+docker compose exec strapi npx strapi admin:create-user --email=admin@truligon.io --password=<your_password> --firstname=Admin --lastname=User
+```
+
+**2. Verify content auto-seeded**
+
+On first start, Strapi's bootstrap hook automatically creates sample content:
+- 3 Categories: Technology, Design, Business
+- 3 Articles: Welcome, Design Tokens, Modular Business OS
+- 3 Products: Zen Starter Kit, Enterprise License, AI Agent Pack
+- 2 Courses: Getting Started, Advanced Type System
+- 2 Events: Developer Summit, Community Call
+
+Visit `http://localhost:3000` to see articles listed on the homepage.
+
+**3. Create an API token (for content scripting)**
+
+Admin user JWTs do NOT grant write access to the Content API (`/api/*`). Create a full-access API token:
+
+```powershell
+# 1. Login to get a JWT
+$JWT = docker compose exec -T strapi node -e "
+async function main() {
+  const res = await fetch('http://localhost:1337/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'admin@truligon.io', password: '<your_password>' })
+  });
+  const data = await res.json();
+  process.stdout.write(data.data?.token || 'FAILED');
+}
+main().catch(console.error);
+"
+
+# 2. Create a full-access API token
+$TOKEN = docker compose exec -T -e STRAPI_ADMIN_JWT=$JWT strapi node -e "
+const STRAPI_URL = 'http://localhost:1337';
+async function main() {
+  const res = await fetch(STRAPI_URL + '/admin/api-tokens', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + process.env.STRAPI_ADMIN_JWT },
+    body: JSON.stringify({ name: 'Dev Token', description: 'Local development token', type: 'full-access' })
+  });
+  const data = await res.json();
+  process.stdout.write(data.data?.accessKey || 'FAILED: ' + JSON.stringify(data));
+}
+main().catch(console.error);
+"
+```
+
+The `accessKey` printed is the **only time you'll see the full key**. Save it.
+
+**4. Re-seed content (optional)**
+
+If you need to reset or re-seed content:
+
+```powershell
+docker compose exec -T -e STRAPI_API_TOKEN=<your_token> strapi node scripts/seed-new.mjs
+```
+
+### Verify Services
+
+```powershell
+# Frontend
+Invoke-RestMethod http://localhost:3000/
+
+# Dashboard
+Invoke-RestMethod http://localhost:3001/
+
+# AI Engine
+Invoke-RestMethod http://localhost:4000/api/health
+
+# Strapi Content API
+Invoke-RestMethod http://localhost:1337/api/articles
+
+# Meilisearch
 Invoke-RestMethod http://localhost:7700/health
 ```
 
-### Strapi Admin
+### Rebuild Individual Service
 
-Navigate to `http://localhost:1337/admin` and create the admin account on first visit.
+```powershell
+# After changing code in a service
+docker compose up -d --build --force-recreate <service_name>
+
+# After changing package.json (need fresh node_modules)
+docker compose down -v <volume_name>
+docker compose up -d --build <service_name>
+```
+
+### View Logs
+
+```powershell
+# All services
+docker compose logs -f
+
+# Single service
+docker compose logs -f <service_name>
+
+# Tail last N lines
+docker compose logs --tail=50 <service_name>
+```
+
+### Stopping
+
+```powershell
+docker compose down          # Stop all containers
+docker compose down -v       # Stop and remove volumes (deletes DB data)
+```
 
 ---
 
