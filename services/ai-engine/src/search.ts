@@ -103,3 +103,38 @@ export async function isHealthy(): Promise<boolean> {
     return false;
   }
 }
+
+const STRAPI_URL = process.env.STRAPI_URL ?? "http://strapi:1337"
+const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN ?? ""
+
+interface StrapiResponse {
+  data?: Array<Record<string, unknown> & { id: number }>
+  error?: { message: string }
+}
+
+export async function reindexAll(): Promise<{ collection: string; count: number }[]> {
+  const results: { collection: string; count: number }[] = []
+  for (const type of INDEXES) {
+    try {
+      const url = `${STRAPI_URL}/api/${type}?pagination[limit]=200`
+      const headers: Record<string, string> = { "Content-Type": "application/json" }
+      if (STRAPI_API_TOKEN) headers["Authorization"] = `Bearer ${STRAPI_API_TOKEN}`
+      const res = await fetch(url, { headers })
+      if (!res.ok) {
+        console.warn(`Failed to fetch ${type}: ${res.status}`)
+        continue
+      }
+      const body = (await res.json()) as StrapiResponse
+      if (body.data) {
+        for (const doc of body.data) {
+          await indexDocument(type, doc as IndexableDocument)
+        }
+        results.push({ collection: type, count: body.data.length })
+        console.log(`Reindexed ${body.data.length} ${type}`)
+      }
+    } catch (err) {
+      console.error(`Failed to reindex ${type}:`, (err as Error).message)
+    }
+  }
+  return results
+}

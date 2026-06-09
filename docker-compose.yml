@@ -52,6 +52,7 @@ services:
       STRAPI_URL: http://strapi:1337
       MEILISEARCH_HOST: http://meilisearch:7700
       MEILISEARCH_API_KEY: ${MEILI_MASTER_KEY:-local_master_key}
+      STRAPI_API_TOKEN: ${STRAPI_API_TOKEN:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     ports:
       - "4000:4000"
@@ -74,6 +75,7 @@ services:
       NODE_ENV: development
       HOST: 0.0.0.0
       PORT: 1337
+      AI_ENGINE_URL: http://ai-engine:4000
       DATABASE_CLIENT: postgres
       DATABASE_HOST: postgres
       DATABASE_PORT: 5432

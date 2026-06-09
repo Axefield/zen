@@ -141,31 +141,6 @@ module.exports = {
       data: { key: "bootstrap_seeded", value: "true" },
     });
 
-    console.log("Content seed complete.");
-
-    // Reindex all existing content into Meilisearch
-    const contentTypes = [
-      { uid: "api::article.article", collection: "articles", fields: ["id", "title", "slug", "excerpt"] },
-      { uid: "api::product.product", collection: "products", fields: ["id", "name", "slug", "description"] },
-      { uid: "api::course.course", collection: "courses", fields: ["id", "title", "slug", "description"] },
-      { uid: "api::event.event", collection: "events", fields: ["id", "title", "slug", "description"] },
-    ];
-    for (const ct of contentTypes) {
-      try {
-        const entries = await strapi.db.query(ct.uid).findMany({ select: ct.fields, limit: 200 });
-        for (const entry of entries) {
-          try {
-            await fetch(`${AI_ENGINE_URL}/api/search/index`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ collection: ct.collection, document: entry }),
-            });
-          } catch {}
-        }
-        console.log(`Indexed ${entries.length} ${ct.collection}`);
-      } catch (err) {
-        console.error(`Failed to reindex ${ct.collection}:`, err.message);
-      }
-    }
+    console.log("Content seed complete. Indexing will happen via ai-engine auto-reindex on startup.");
   },
 };

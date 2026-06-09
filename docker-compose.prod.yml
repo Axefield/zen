@@ -1,0 +1,213 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: truligon
+      POSTGRES_USER: truligon
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U truligon -d truligon"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.13
+    restart: always
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+    volumes:
+      - meili_data:/meili_data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+
+  strapi:
+    build:
+      context: ./services/strapi
+      target: prod
+    image: ghcr.io/axefield/strapi:latest
+    restart: always
+    env_file: .env.prod
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 1337
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: truligon
+      DATABASE_USERNAME: truligon
+      DATABASE_PASSWORD: ${DB_PASSWORD}
+      DATABASE_SSL: "true"
+    volumes:
+      - strapi_uploads:/app/public/uploads
+    networks:
+      - internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ai-engine:
+    build:
+      context: ./services/ai-engine
+      target: prod
+    image: ghcr.io/axefield/ai-engine:latest
+    restart: always
+    env_file: .env.prod
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgres://truligon:${DB_PASSWORD}@postgres:5432/truligon?sslmode=require
+      REDIS_URL: redis://redis:6379
+      STRAPI_URL: http://strapi:1337
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_API_KEY: ${MEILI_MASTER_KEY}
+    networks:
+      - internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+      strapi:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  zen-astro-web:
+    build:
+      context: .
+      dockerfile: apps/zen-astro-web/Dockerfile
+      target: prod
+    image: ghcr.io/axefield/zen-astro-web:latest
+    restart: always
+    env_file: .env.prod
+    environment:
+      NODE_ENV: production
+      PUBLIC_API_URL: http://ai-engine:4000
+      PUBLIC_STRAPI_URL: http://strapi:1337
+    networks:
+      - internal
+      - external
+    ports:
+      - "80:4321"
+    depends_on:
+      ai-engine:
+        condition: service_started
+      strapi:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  zen-astro-dashboard:
+    build:
+      context: .
+      dockerfile: apps/zen-astro-dashboard/Dockerfile
+      target: prod
+    image: ghcr.io/axefield/zen-astro-dashboard:latest
+    restart: always
+    env_file: .env.prod
+    environment:
+      NODE_ENV: production
+      PUBLIC_API_URL: http://localhost:4000
+      PUBLIC_STRAPI_URL: http://strapi:1337
+      INTERNAL_API_URL: http://ai-engine:4000
+    networks:
+      - internal
+    depends_on:
+      ai-engine:
+        condition: service_started
+      strapi:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  internal:
+    driver: bridge
+    internal: true
+  external:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  meili_data:
+  strapi_uploads:

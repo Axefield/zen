@@ -1,5 +1,5 @@
 import { createServer, IncomingMessage, ServerResponse } from "node:http"
-import { indexDocument, removeDocument, search, getIndexStats, isHealthy, IndexableDocument } from "./search.js"
+import { indexDocument, removeDocument, search, getIndexStats, isHealthy, reindexAll, IndexableDocument } from "./search.js"
 import { handleLogin, handleRegister, handleMe } from "./routes/auth.js"
 import { handleChat, handleModels } from "./routes/ai.js"
 import { handleContentList, handleContentGet, handleContentCreate, handleContentUpdate, handleContentDelete } from "./routes/content.js"
@@ -154,28 +154,8 @@ async function router(req: IncomingMessage, res: ServerResponse) {
   }
 
   if (path === "/api/search/reindex" && req.method === "POST") {
-    const STRAPI_URL = process.env.STRAPI_URL ?? "http://strapi:1337"
-    const types = ["articles", "products", "courses", "events"] as const
-    interface StrapiResponse {
-      data?: Array<Record<string, unknown> & { id: number }>
-      error?: { message: string }
-    }
-    for (const type of types) {
-      try {
-        const url = `${STRAPI_URL}/api/${type}?pagination[limit]=200`
-        const res_ = await fetch(url)
-        const body = (await res_.json()) as StrapiResponse
-        if (body.data) {
-          for (const doc of body.data) {
-            await indexDocument(type, doc as IndexableDocument)
-          }
-          console.log(`Reindexed ${body.data.length} ${type}`)
-        }
-      } catch (err) {
-        console.error(`Failed to reindex ${type}:`, (err as Error).message)
-      }
-    }
-    json(res, 200, { reindexed: true })
+    const results = await reindexAll()
+    json(res, 200, { reindexed: true, results })
     return
   }
 
@@ -186,6 +166,30 @@ const server = createServer(router)
 
 await seedDefaultUser()
 
-server.listen(port, "0.0.0.0", () => {
+server.listen(port, "0.0.0.0", async () => {
   console.log(`AI Engine listening on port ${port}`)
+
+  // Auto-reindex from Strapi on startup.
+  // Strapi may not be ready yet, so retry with backoff.
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      const results = await reindexAll()
+      const total = results.reduce((s, r) => s + r.count, 0)
+      if (total > 0) {
+        console.log(`Startup reindex complete: ${total} documents indexed`)
+      } else {
+        console.log("Startup reindex: no documents found yet (Strapi may still be bootstrapping)")
+      }
+      break
+    } catch (err) {
+      console.warn(`Startup reindex attempt ${attempt}/5 failed:`, (err as Error).message)
+      if (attempt < 5) {
+        const delay = attempt * 2000
+        console.log(`Retrying in ${delay}ms...`)
+        await new Promise((r) => setTimeout(r, delay))
+      } else {
+        console.error("Startup reindex failed after 5 attempts")
+      }
+    }
+  }
 })
