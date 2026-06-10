@@ -186,6 +186,8 @@ export {
   FeatureFlagSchema,
   SystemRoleSchema,
   UserSchema,
+  AuthSessionSchema,
   LoginRequestSchema,
+  LoginResponseSchema,
   RegisterRequestSchema,
 } from "./validation.js"

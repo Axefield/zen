@@ -3,18 +3,13 @@ import { indexDocument, removeDocument, search, getIndexStats, isHealthy, reinde
 import { handleLogin, handleRegister, handleMe } from "./routes/auth.js"
 import { handleChat, handleModels } from "./routes/ai.js"
 import { handleContentList, handleContentGet, handleContentCreate, handleContentUpdate, handleContentDelete } from "./routes/content.js"
-import { seedDefaultUser } from "./auth.js"
+import { seedDefaultUser, hasMinRole, verifyToken, type SystemRole } from "./auth.js"
 import { handleMcpGet, handleMcpPost } from "./mcp.js"
-import { verifyToken } from "./auth.js"
+import { handleStrapiWebhook } from "./routes/webhooks.js"
+import { handleListSessions, handleCreateSession, handleUpdateSession, handleDeleteSession } from "./routes/chat-sessions.js"
 import { HEALTH } from "./constants.js"
 
 const port = Number(process.env.PORT ?? 4000)
-
-async function readBody(req: IncomingMessage): Promise<string> {
-  const chunks: Buffer[] = []
-  for await (const chunk of req) chunks.push(Buffer.from(chunk))
-  return Buffer.concat(chunks).toString("utf-8")
-}
 
 function json(res: ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { "Content-Type": "application/json" })
@@ -27,10 +22,19 @@ function corsHeaders(res: ServerResponse) {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 }
 
-function isAuthenticated(req: IncomingMessage): boolean {
+function getUserRole(req: IncomingMessage): SystemRole | null {
   const authHeader = req.headers.authorization
-  if (!authHeader?.startsWith("Bearer ")) return false
-  return verifyToken(authHeader.slice(7)) !== null
+  if (!authHeader?.startsWith("Bearer ")) return null
+  const payload = verifyToken(authHeader.slice(7))
+  return payload?.role ?? null
+}
+
+function requireRole(res: ServerResponse, role: SystemRole | null, minRole: SystemRole): boolean {
+  if (!role || !hasMinRole(role, minRole)) {
+    json(res, 403, { error: `Forbidden: requires ${minRole} role or higher` })
+    return false
+  }
+  return true
 }
 
 async function router(req: IncomingMessage, res: ServerResponse) {
@@ -45,7 +49,6 @@ async function router(req: IncomingMessage, res: ServerResponse) {
   const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`)
   const path = url.pathname
 
-  // MCP protocol routes
   if (path === "/mcp" && req.method === "GET") {
     await handleMcpGet(req, res)
     return
@@ -68,6 +71,8 @@ async function router(req: IncomingMessage, res: ServerResponse) {
   }
 
   if (path === "/api/auth/register" && req.method === "POST") {
+    const callerRole = getUserRole(req)
+    if (!requireRole(res, callerRole, "admin")) return
     await handleRegister(req, res)
     return
   }
@@ -78,6 +83,8 @@ async function router(req: IncomingMessage, res: ServerResponse) {
   }
 
   if (path === "/api/ai/chat" && req.method === "POST") {
+    const role = getUserRole(req)
+    if (!requireRole(res, role, "operator")) return
     await handleChat(req, res)
     return
   }
@@ -87,7 +94,6 @@ async function router(req: IncomingMessage, res: ServerResponse) {
     return
   }
 
-  // Protected content CRUD routes (require auth)
   const contentListMatch = path.match(/^\/api\/content\/(articles|products|courses|events|pages|categories)$/)
   const contentDetailMatch = path.match(/^\/api\/content\/(articles|products|courses|events|pages|categories)\/(\d+)$/)
 
@@ -102,19 +108,22 @@ async function router(req: IncomingMessage, res: ServerResponse) {
   }
 
   if (contentListMatch && req.method === "POST") {
-    if (!isAuthenticated(req)) { json(res, 401, { error: "Unauthorized" }); return }
+    const role = getUserRole(req)
+    if (!requireRole(res, role, "operator")) return
     await handleContentCreate(req, res)
     return
   }
 
   if (contentDetailMatch && req.method === "PUT") {
-    if (!isAuthenticated(req)) { json(res, 401, { error: "Unauthorized" }); return }
+    const role = getUserRole(req)
+    if (!requireRole(res, role, "operator")) return
     await handleContentUpdate(req, res)
     return
   }
 
   if (contentDetailMatch && req.method === "DELETE") {
-    if (!isAuthenticated(req)) { json(res, 401, { error: "Unauthorized" }); return }
+    const role = getUserRole(req)
+    if (!requireRole(res, role, "operator")) return
     await handleContentDelete(req, res)
     return
   }
@@ -153,13 +162,55 @@ async function router(req: IncomingMessage, res: ServerResponse) {
     return
   }
 
+  if (path === "/api/webhooks/strapi" && req.method === "POST") {
+    await handleStrapiWebhook(req, res)
+    return
+  }
+
+  if (path === "/api/chat/sessions" && req.method === "GET") {
+    const role = getUserRole(req)
+    if (!requireRole(res, role, "operator")) return
+    await handleListSessions(req, res)
+    return
+  }
+
+  if (path === "/api/chat/sessions" && req.method === "POST") {
+    const role = getUserRole(req)
+    if (!requireRole(res, role, "operator")) return
+    await handleCreateSession(req, res)
+    return
+  }
+
+  const sessionUpdateMatch = path.match(/^\/api\/chat\/sessions\/(.+)$/)
+  if (sessionUpdateMatch && req.method === "PUT") {
+    const role = getUserRole(req)
+    if (!requireRole(res, role, "operator")) return
+    await handleUpdateSession(req, res, sessionUpdateMatch[1])
+    return
+  }
+
+  if (sessionUpdateMatch && req.method === "DELETE") {
+    const role = getUserRole(req)
+    if (!requireRole(res, role, "operator")) return
+    await handleDeleteSession(req, res, sessionUpdateMatch[1])
+    return
+  }
+
   if (path === "/api/search/reindex" && req.method === "POST") {
+    const role = getUserRole(req)
+    if (!requireRole(res, role, "admin")) return
     const results = await reindexAll()
     json(res, 200, { reindexed: true, results })
     return
   }
 
   json(res, 404, { error: "Not Found" })
+}
+
+async function readBody(req: IncomingMessage): Promise<string> {
+  const chunks: Buffer[] = []
+  for await (const chunk of req) chunks.push(Buffer.from(chunk))
+  return Buffer.concat(chunks).toString("utf-8")
 }
 
 const server = createServer(router)
@@ -169,8 +220,6 @@ await seedDefaultUser()
 server.listen(port, "0.0.0.0", async () => {
   console.log(`AI Engine listening on port ${port}`)
 
-  // Auto-reindex from Strapi on startup.
-  // Strapi may not be ready yet, so retry with backoff.
   for (let attempt = 1; attempt <= 5; attempt++) {
     try {
       const results = await reindexAll()

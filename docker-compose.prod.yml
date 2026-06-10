@@ -135,6 +135,36 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  strapi-mcp:
+    build:
+      context: ./services/strapi-mcp
+      target: prod
+    image: ghcr.io/axefield/strapi-mcp:latest
+    restart: always
+    env_file: .env.prod
+    environment:
+      NODE_ENV: production
+      PORT: 1338
+      STRAPI_URL: http://strapi:1337
+    networks:
+      - internal
+      - external
+    ports:
+      - "1338:1338"
+    depends_on:
+      strapi:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   zen-astro-web:
     build:
       context: .
@@ -211,3 +241,4 @@ volumes:
   redis_data:
   meili_data:
   strapi_uploads:
+  strapi_mcp_node_modules:

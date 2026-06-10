@@ -6,6 +6,17 @@ const TOKEN_EXPIRY = "24h"
 
 export type SystemRole = "owner" | "admin" | "operator" | "viewer"
 
+const ROLE_HIERARCHY: Record<SystemRole, number> = {
+  viewer: 1,
+  operator: 2,
+  admin: 3,
+  owner: 4,
+}
+
+export function hasMinRole(userRole: SystemRole, minRole: SystemRole): boolean {
+  return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[minRole]
+}
+
 export interface UserRecord {
   id: string
   email: string

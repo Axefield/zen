@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "allowJs": true,
+    "checkJs": false,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "outDir": "dist"
+  },
+  "include": ["config/**/*.js", "src/**/*.js", "types/**/*.d.ts"],
+  "exclude": ["node_modules", "dist", ".tmp", ".cache", "build"]
+}

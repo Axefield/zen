@@ -1,4 +1,4 @@
-import { AiProvider, ChatMessage, ChatRequest, ChatResponse } from "./types.js"
+import { AiProvider, ChatMessage, ChatRequest, ChatResponse } from "@truligon/ai"
 
 interface OllamaChatRequest {
   model: string

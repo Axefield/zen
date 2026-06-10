@@ -41,6 +41,32 @@ async function removeFromMeilisearch(event) {
   }
 }
 
+async function ensureWebhook(strapi) {
+  const WEBHOOK_NAME = "ai-engine";
+  const WEBHOOK_URL = `${AI_ENGINE_URL}/api/webhooks/strapi`;
+  try {
+    const existing = await strapi.webhookStore.findWebhooks();
+    const hasWebhook = existing.some((w) => w.name === WEBHOOK_NAME);
+    if (!hasWebhook) {
+      await strapi.webhookStore.create({
+        name: WEBHOOK_NAME,
+        url: WEBHOOK_URL,
+        headers: {},
+        events: [
+          "entry.create",
+          "entry.update",
+          "entry.delete",
+          "entry.publish",
+          "entry.unpublish",
+        ],
+      });
+      console.log(`Created webhook: ${WEBHOOK_NAME} → ${WEBHOOK_URL}`);
+    }
+  } catch (err) {
+    console.error("Failed to ensure webhook:", err.message);
+  }
+}
+
 module.exports = {
   async register({ strapi }) {
     strapi.db.lifecycles.subscribe((event) => {
@@ -55,6 +81,8 @@ module.exports = {
   },
 
   async bootstrap({ strapi }) {
+    await ensureWebhook(strapi);
+
     let hasRun;
     try {
       hasRun = await strapi.db.query("strapi::core_store").findOne({

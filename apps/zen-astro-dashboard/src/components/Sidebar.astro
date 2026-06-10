@@ -1,17 +1,29 @@
 ---
-const navigation = [
-  { label: "Overview", href: "/", icon: "grid" },
-  { label: "Analytics", href: "/analytics", icon: "chart" },
-  { label: "Content", href: "/content", icon: "file" },
-  { label: "Agents", href: "/agents", icon: "bot" },
-  { label: "Experiments", href: "/experiments", icon: "beaker" },
+const ROLE_HIERARCHY: Record<string, number> = {
+  viewer: 1,
+  operator: 2,
+  admin: 3,
+  owner: 4,
+}
+
+const NAV_ITEMS = [
+  { label: "Overview", href: "/", icon: "grid", minRole: "viewer" },
+  { label: "Analytics", href: "/analytics", icon: "chart", minRole: "viewer" },
+  { label: "Content", href: "/content", icon: "file", minRole: "operator" },
+  { label: "Review Queue", href: "/content/review", icon: "checklist", minRole: "operator" },
+  { label: "Agents", href: "/agents", icon: "bot", minRole: "operator" },
+  { label: "Experiments", href: "/experiments", icon: "beaker", minRole: "operator" },
 ]
 
 const user = Astro.locals.user
 const currentPath = Astro.url.pathname
+const userLevel = ROLE_HIERARCHY[user?.role ?? "viewer"] ?? 0
+
+const visibleNav = NAV_ITEMS.filter((item) => userLevel >= (ROLE_HIERARCHY[item.minRole] ?? 99))
 
 function isActive(itemHref: string): boolean {
-  if (itemHref === "/content") return currentPath.startsWith("/content")
+  if (itemHref === "/content" && currentPath === "/content") return true
+  if (itemHref === "/content/review" && currentPath.startsWith("/content/review")) return true
   return currentPath === itemHref
 }
 ---
@@ -19,9 +31,9 @@ function isActive(itemHref: string): boolean {
 <aside class="sidebar">
   <div class="brand">Truligon's Zen</div>
   <nav aria-label="Dashboard navigation">
-    {navigation.map((item) => (
+    {visibleNav.map((item) => (
       <a href={item.href} class={isActive(item.href) ? "active" : ""}>
-        <span class="icon" aria-hidden="true">{item.icon === "grid" ? "▦" : item.icon === "chart" ? "📊" : item.icon === "file" ? "📄" : item.icon === "bot" ? "🤖" : item.icon === "beaker" ? "🔬" : "⚙"}</span>
+        <span class="icon" aria-hidden="true">{item.icon === "grid" ? "▦" : item.icon === "chart" ? "📊" : item.icon === "file" ? "📄" : item.icon === "bot" ? "🤖" : item.icon === "beaker" ? "🔬" : item.icon === "checklist" ? "✓" : "⚙"}</span>
         {item.label}
       </a>
     ))}

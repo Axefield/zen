@@ -5,5 +5,8 @@ module.exports = ({ env }) => ({
   port: env.int("PORT", 1337),
   app: {
     keys: env.array("APP_KEYS")
+  },
+  mcp: {
+    enabled: env.bool("STRAPI_MCP_ENABLED", true),
   }
 });

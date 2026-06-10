@@ -1,0 +1,209 @@
+---
+import DashboardLayout from "../../layouts/DashboardLayout.astro"
+import Badge from "@truligon/ui/Badge"
+
+const API_URL = process.env.INTERNAL_API_URL ?? "http://ai-engine:4000"
+const PUBLIC_API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000"
+const token = Astro.cookies.get("zen_token")?.value
+
+const COLLECTIONS = [
+  { type: "articles", label: "Article" },
+  { type: "products", label: "Product" },
+  { type: "courses", label: "Course" },
+  { type: "events", label: "Event" },
+  { type: "pages", label: "Page" },
+]
+
+interface PendingItem {
+  id: number
+  documentId: string
+  collection: string
+  label: string
+  title: string
+  createdAt: string
+  updatedAt: string
+}
+
+const pending: PendingItem[] = []
+
+if (token) {
+  for (const col of COLLECTIONS) {
+    try {
+      const url = `${API_URL}/api/content/${col.type}?filters[publishedAt][$null]=true&pagination[limit]=50`
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) continue
+      const body = await res.json()
+      if (body.data) {
+        for (const entry of body.data) {
+          pending.push({
+            id: entry.id,
+            documentId: entry.documentId,
+            collection: col.type,
+            label: col.label,
+            title: entry.title ?? entry.name ?? "(untitled)",
+            createdAt: entry.createdAt,
+            updatedAt: entry.updatedAt,
+          })
+        }
+      }
+    } catch {}
+  }
+}
+
+pending.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+---
+
+<DashboardLayout title="Review Queue">
+  <div class="review-page" data-api-url={PUBLIC_API_URL}>
+    <h1>Review Queue</h1>
+    <p class="subtitle">{pending.length} item{pending.length !== 1 ? "s" : ""} pending review</p>
+
+    {pending.length === 0 ? (
+      <p class="empty">No draft content pending review.</p>
+    ) : (
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Title</th>
+              <th>Updated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pending.map((item) => (
+              <tr>
+                <td><Badge>{item.label}</Badge></td>
+                <td>
+                  <a href={`/content/${item.collection}/${item.id}`} class="title-link">{item.title}</a>
+                </td>
+                <td class="date">{new Date(item.updatedAt).toLocaleDateString()}</td>
+                <td class="actions">
+                  <button class="btn-publish" data-publish={JSON.stringify({ collection: item.collection, id: item.id })}>Publish</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+</DashboardLayout>
+
+<script>
+  const API_URL = document.querySelector("[data-api-url]")?.getAttribute("data-api-url") ?? "http://localhost:4000"
+  document.querySelectorAll("[data-publish]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const { collection, id } = JSON.parse(btn.getAttribute("data-publish")!)
+      btn.textContent = "Publishing..."
+      btn.disabled = true
+      try {
+        const token = document.cookie
+          .split("; ")
+          .find((c) => c.startsWith("zen_token="))
+          ?.split("=")[1]
+        const res = await fetch(`${API_URL}/api/content/${collection}/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ publishedAt: new Date().toISOString() }),
+        })
+        if (res.ok) {
+          btn.textContent = "Published!"
+          btn.classList.add("done")
+          setTimeout(() => {
+            const row = btn.closest("tr")
+            row?.remove()
+          }, 1500)
+        } else {
+          btn.textContent = "Failed"
+          btn.disabled = false
+        }
+      } catch {
+        btn.textContent = "Error"
+        btn.disabled = false
+      }
+    })
+  })
+</script>
+
+<style>
+  .review-page {
+    padding: var(--spacing-6);
+  }
+  h1 {
+    font-size: var(--text-heading-2);
+    font-weight: var(--font-weight-bold);
+    margin: 0 0 var(--spacing-1);
+  }
+  .subtitle {
+    color: var(--text-secondary);
+    margin: 0 0 var(--spacing-6);
+    font-size: var(--text-small);
+  }
+  .empty {
+    color: var(--text-secondary);
+    font-size: var(--text-body);
+    padding: var(--spacing-8) 0;
+    text-align: center;
+  }
+  .table-wrapper {
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th {
+    text-align: left;
+    padding: var(--spacing-3) var(--spacing-4);
+    font-size: var(--text-small);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--color-neutral-200);
+  }
+  td {
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--color-neutral-100);
+    font-size: var(--text-body);
+  }
+  .title-link {
+    color: var(--color-primary-600);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+  }
+  .title-link:hover {
+    text-decoration: underline;
+  }
+  .date {
+    color: var(--text-secondary);
+    font-size: var(--text-small);
+    white-space: nowrap;
+  }
+  .actions {
+    white-space: nowrap;
+  }
+  .btn-publish {
+    background: var(--color-primary-500);
+    color: white;
+    border: none;
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-md);
+    font-size: var(--text-small);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+  }
+  .btn-publish:hover:not(:disabled) {
+    background: var(--color-primary-600);
+  }
+  .btn-publish:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .btn-publish.done {
+    background: var(--color-success-500);
+  }
+</style>

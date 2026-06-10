@@ -34,45 +34,45 @@ function resolveMediaArray(arr: unknown[] | undefined | null): Record<string, un
 
 <div class={`dynamic-zone ${className}`}>
   {blocks.map((block) => {
-    const b = block as Record<string, unknown>
+    const b = block as any
     switch (block.__component) {
       case "shared.hero":
         return <Hero
-          headline={b.headline as string}
-          subheadline={b.subheadline as string | undefined}
-          backgroundMedia={resolveMedia(b.backgroundMedia as Record<string, unknown>) as Record<string, unknown> as any}
-          primaryCta={b.primaryCta ? { ...(b.primaryCta as Record<string, unknown>), buttonText: (b.primaryCta as Record<string, string>).buttonText ?? "", buttonUrl: (b.primaryCta as Record<string, string>).buttonUrl ?? "" } as any : undefined}
+          headline={b.headline}
+          subheadline={b.subheadline}
+          backgroundMedia={resolveMedia(b.backgroundMedia)}
+          primaryCta={b.primaryCta ? { ...b.primaryCta, buttonText: b.primaryCta.buttonText ?? "", buttonUrl: b.primaryCta.buttonUrl ?? "" } : undefined}
         />
       case "shared.rich-text-block":
         return <RichTextBlock
-          body={b.body as string}
-          media={resolveMediaArray(b.media) as any}
+          body={b.body}
+          media={resolveMediaArray(b.media)}
         />
       case "shared.call-to-action":
         return <CallToAction
-          headline={b.headline as string | undefined}
-          body={b.body as string | undefined}
-          buttonText={b.buttonText as string}
-          buttonUrl={b.buttonUrl as string}
-          variant={(b.variant as "primary" | "secondary" | "outline" | "ghost") ?? "primary"}
+          headline={b.headline}
+          body={b.body}
+          buttonText={b.buttonText}
+          buttonUrl={b.buttonUrl}
+          variant={b.variant ?? "primary"}
         />
       case "shared.media-gallery":
         return <MediaGallery
-          media={resolveMediaArray(b.media) as any}
-          layout={(b.layout as "grid" | "carousel" | "masonry" | "single") ?? "grid"}
+          media={resolveMediaArray(b.media)}
+          layout={b.layout ?? "grid"}
         />
       case "shared.pricing-table":
         return <PricingTable
-          headline={b.headline as string | undefined}
-          tiers={b.tiers as any[]}
+          headline={b.headline}
+          tiers={b.tiers}
         />
       case "shared.testimonial-card":
         return <TestimonialCard
-          quote={b.quote as string}
-          author={b.author as string}
-          role={b.role as string | undefined}
-          company={b.company as string | undefined}
-          avatar={resolveMedia(b.avatar as Record<string, unknown>) as any}
+          quote={b.quote}
+          author={b.author}
+          role={b.role}
+          company={b.company}
+          avatar={resolveMedia(b.avatar)}
         />
       default:
         return <p class="unknown-block">Unknown block: {block.__component}</p>

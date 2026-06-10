@@ -1,11 +1,12 @@
 ---
+import type { Money } from "@truligon/types"
 import CallToAction from "./CallToAction.astro"
 
 export interface PricingTierProps {
   id?: number
   name: string
   description?: string
-  price: number
+  amount: Money
   interval?: "monthly" | "yearly" | "one-time"
   features?: string[]
   highlighted?: boolean
@@ -25,6 +26,21 @@ export interface Props {
 }
 
 const { headline, tiers, class: className = "" } = Astro.props
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  JPY: "¥",
+  CAD: "CA$",
+  AUD: "A$",
+}
+
+function formatAmount(amount: Money): string {
+  const symbol = CURRENCY_SYMBOLS[amount.currency] ?? amount.currency + " "
+  const formatted = amount.amount % 1 === 0 ? amount.amount.toFixed(0) : amount.amount.toFixed(2)
+  return `${symbol}${formatted}`
+}
 ---
 
 <section class={`pricing-table ${className}`}>
@@ -37,7 +53,7 @@ const { headline, tiers, class: className = "" } = Astro.props
           {tier.description && <p class="tier-desc">{tier.description}</p>}
         </header>
         <div class="tier-price">
-          <span class="price-amount">${tier.price}</span>
+          <span class="price-amount">{formatAmount(tier.amount)}</span>
           {tier.interval && tier.interval !== "one-time" && (
             <span class="price-interval">/{tier.interval}</span>
           )}

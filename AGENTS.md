@@ -60,6 +60,7 @@ Designed to power any digital product (SaaS, e-commerce, publishing, education, 
 | `postgres` | 5432 | 5432 | Primary database |
 | `redis` | 6379 | 6379 | Cache, queue, session store |
 | `meilisearch` | 7700 | 7700 | Full-text and vector search |
+| `strapi-mcp` | 1338 | 1338 | Strapi MCP relay (proxies /mcp to Strapi with Admin token injection, auto-provisions token) |
 
 ### Package Dependency Graph
 
@@ -85,7 +86,7 @@ Designed to power any digital product (SaaS, e-commerce, publishing, education, 
 
 ### Phase 0 — Foundation Scaffolding (100% Complete)
 
-All 7 Docker services run. Module directories exist. `.gitignore`, `.env.example`, `.dockerignore` are set up.
+All 8 Docker services run. Module directories exist. `.gitignore`, `.env.example`, `.dockerignore` are set up.
 
 ### Phase 1 — Type System (100% Complete)
 
@@ -245,6 +246,7 @@ docker compose up --build
 | meilisearch | First | — | Health check: wget /health |
 | strapi | After DB | postgres | Runs `npm run develop` |
 | ai-engine | After DB/redis/meili | postgres, redis, meilisearch | Runs `npm run dev` |
+| strapi-mcp | After strapi | strapi | Runs `npm run dev` |
 | zen-astro-web | After ai-engine, strapi | ai-engine, strapi | Runs `astro dev` |
 | zen-astro-dashboard | After ai-engine | ai-engine | Runs `astro dev` |
 
@@ -431,6 +433,14 @@ docker compose logs --tail=50 <service_name>
 | `src/components/*/*.json` | Component definitions |
 | `types/generated/contentTypes.d.ts` | Auto-generated TypeScript types |
 
+### services/strapi-mcp
+
+| File | Purpose |
+|------|---------|
+| `src/index.ts` | MCP relay proxy (Hono, auto-provisions token) |
+| `Dockerfile` | Multi-stage (deps/dev/prod) |
+| `package.json` | Standalone package |
+
 ---
 
 ## Known Issues & Fixes
@@ -491,6 +501,7 @@ docker compose up -d --build zen-astro-web
 | 5432 | postgres | internal only |
 | 6379 | redis | internal only |
 | 7700 | meilisearch | http://localhost:7700 |
+| 1338 | strapi-mcp | http://localhost:1338 |
 
 ---
 
@@ -508,6 +519,7 @@ docker compose up -d --build zen-astro-web
 | `STRAPI_JWT_SECRET` | `localJwtSecret` | Yes* | strapi |
 | `PUBLIC_API_URL` | `http://localhost:4000` | No | zen-astro-web, zen-astro-dashboard |
 | `PUBLIC_STRAPI_URL` | `http://localhost:1337` | No | zen-astro-web, zen-astro-dashboard |
+| `STRAPI_MCP_TOKEN` | — | Yes* | strapi-mcp, strapi |
 
 `*` Required for production; defaults are provided for local development.
 

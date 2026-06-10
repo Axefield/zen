@@ -3,8 +3,8 @@ WORKDIR /app
 
 RUN apk add --no-cache build-base gcc autoconf automake zlib-dev libpng-dev vips-dev git
 
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json ./
+RUN npm install
 
 FROM node:22-alpine AS build
 WORKDIR /app
@@ -18,8 +18,8 @@ WORKDIR /app
 
 RUN apk add --no-cache build-base gcc autoconf automake zlib-dev libpng-dev vips-dev git
 
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json ./
+RUN npm install
 
 COPY . .
 
@@ -30,7 +30,7 @@ CMD ["npm", "run", "develop"]
 FROM node:22-alpine AS prod
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package.json ./
 COPY --from=deps /app/node_modules ./node_modules
 
 COPY --from=build /app/dist ./dist

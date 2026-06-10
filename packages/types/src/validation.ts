@@ -579,9 +579,21 @@ export const UserSchema = BaseEntitySchema.extend({
   isActive: z.boolean(),
 })
 
+export const AuthSessionSchema = z.object({
+  userId: z.string().uuid(),
+  token: z.string().min(1),
+  expiresAt: z.string().datetime(),
+})
+
 export const LoginRequestSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(128),
+})
+
+export const LoginResponseSchema = z.object({
+  token: z.string().min(1),
+  user: UserSchema,
+  expiresAt: z.string().datetime(),
 })
 
 export const RegisterRequestSchema = z.object({
